@@ -1,0 +1,114 @@
+{# NGINX HTTP GRPC template -- ngx_http_grpc_module #}
+{%- macro grpc(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' %}
+{%- if data.grpc_bind is defined %}
+{%- if data.grpc_bind.off | default(false) %}
+grpc_bind off;
+{%- else %}
+grpc_bind {{ data.grpc_bind.address }}{{' transparent' if data.grpc_bind.transparent | default(false) }};
+{% endif %}
+{% endif %}
+{%- if data.grpc_buffer_size is defined %}
+grpc_buffer_size {{ data.grpc_buffer_size }};
+{% endif %}
+{%- if data.grpc_connect_timeout is defined %}
+grpc_connect_timeout {{ data.grpc_connect_timeout }};
+{% endif %}
+{%- for header in data.grpc_hide_header | default([]) %}
+grpc_hide_header {{ header }};
+{% endfor %}
+{%- if data.grpc_ignore_headers is defined %}
+grpc_ignore_headers {{ data.grpc_ignore_headers | join(' ') }};
+{% endif %}
+{%- if data.grpc_intercept_errors is defined %}
+grpc_intercept_errors {{ data.grpc_intercept_errors | ternary ('on', 'off') }};
+{% endif %}
+{%- if data.grpc_next_upstream is defined %}
+{%- if data.grpc_next_upstream.off | default(false) %}
+grpc_next_upstream off;
+{%- else %}
+grpc_next_upstream {{ data.grpc_next_upstream.upstreams | join(' ') }};
+{% endif %}
+{% endif %}
+{%- if data.grpc_next_upstream_timeout is defined %}
+grpc_next_upstream_timeout {{ data.grpc_next_upstream_timeout }};
+{% endif %}
+{%- if data.grpc_next_upstream_tries is defined %}
+grpc_next_upstream_tries {{ data.grpc_next_upstream_tries }};
+{% endif %}
+{%- for header in data.grpc_pass_header | default([]) %}
+grpc_pass_header {{ header }};
+{% endfor %}
+{%- if data.grpc_read_timeout is defined %}
+grpc_read_timeout {{ data.grpc_read_timeout }};
+{% endif %}
+{%- if data.grpc_send_timeout is defined %}
+grpc_send_timeout {{ data.grpc_send_timeout }};
+{% endif %}
+{%- for header in data.grpc_set_header | default([]) %}
+grpc_set_header {{ header.field }} {{ header.value }};
+{% endfor %}
+{%- if data.grpc_socket_keepalive is defined %}
+grpc_socket_keepalive {{ data.grpc_socket_keepalive | ternary ('on', 'off') }};
+{% endif %}
+{%- if data.grpc_ssl_certificate is defined %}
+grpc_ssl_certificate {{ data.grpc_ssl_certificate }};
+{% endif %}
+{%- if data.grpc_ssl_certificate_key is defined %}
+grpc_ssl_certificate_key {{ data.grpc_ssl_certificate_key }};
+{% endif %}
+{%- if data.grpc_ssl_ciphers is defined %}
+grpc_ssl_ciphers {{ data.grpc_ssl_ciphers }};
+{% endif %}
+{%- for command in data.grpc_ssl_conf_command | default([]) %}
+grpc_ssl_conf_command {{ command }};
+{% endfor %}
+{%- if data.grpc_ssl_crl is defined %}
+grpc_ssl_crl {{ data.grpc_ssl_crl }};
+{% endif %}
+{%- if data.grpc_ssl_name is defined %}
+grpc_ssl_name {{ data.grpc_ssl_name }};
+{% endif %}
+{%- if data.grpc_ssl_password_file is defined %}
+grpc_ssl_password_file {{ data.grpc_ssl_password_file }};
+{% endif %}
+{%- if data.grpc_ssl_protocols is defined and
+       (data.grpc_ssl_protocols.sslv2 | default(false) or
+       data.grpc_ssl_protocols.sslv3 | default(false) or
+       data.grpc_ssl_protocols.tlsv1 | default(false) or
+       data.grpc_ssl_protocols.tlsv11 | default(false) or
+       data.grpc_ssl_protocols.tlsv12 | default(false) or
+       data.grpc_ssl_protocols.tlsv13 | default(false)) %}
+grpc_ssl_protocols{{ ' SSLv2' if data.grpc_ssl_protocols.sslv2 | default(false) -}}
+                  {{- ' SSLv3' if data.grpc_ssl_protocols.sslv3 | default(false) -}}
+                  {{- ' TLSv1' if data.grpc_ssl_protocols.tlsv1 | default(false) -}}
+                  {{- ' TLSv1.1' if data.grpc_ssl_protocols.tlsv11 | default(false) -}}
+                  {{- ' TLSv1.2' if data.grpc_ssl_protocols.tlsv12 | default(false) -}}
+                  {{- ' TLSv1.3' if data.grpc_ssl_protocols.tlsv13 | default(false) }};
+{% endif %}
+{%- if data.grpc_ssl_server_name is defined %}
+grpc_ssl_server_name {{ data.grpc_ssl_server_name | ternary ('on', 'off') }};
+{% endif %}
+{%- if data.grpc_ssl_session_reuse is defined %}
+grpc_ssl_session_reuse {{ data.grpc_ssl_session_reuse | ternary ('on', 'off') }};
+{% endif %}
+{%- if data.grpc_ssl_trusted_certificate is defined %}
+grpc_ssl_trusted_certificate {{ data.grpc_ssl_trusted_certificate }};
+{% endif %}
+{%- if data.grpc_ssl_verify is defined %}
+grpc_ssl_verify {{ data.grpc_ssl_verify | ternary ('on', 'off') }};
+{% endif %}
+{%- if data.grpc_ssl_verify_depth is defined %}
+grpc_ssl_verify_depth {{ data.grpc_ssl_verify_depth }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'location' or
+       context == 'locationif' %}
+{%- if data.grpc_pass is defined %}
+grpc_pass {{ data.grpc_pass }};
+{% endif %}
+{% endif %}
+{% endmacro %}

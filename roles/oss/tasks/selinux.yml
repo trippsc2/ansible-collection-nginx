@@ -1,0 +1,16 @@
+---
+- name: Ensure SELinux management packages are installed
+  become: true
+  ansible.builtin.package:
+    name: "{{ _nginx_selinux_packages }}"
+    state: present
+
+- name: Ensure SELinux is configured to allow HTTP network connections
+  loop:
+    - httpd_can_network_connect
+    - httpd_can_network_relay
+  become: true
+  ansible.posix.seboolean:
+    name: "{{ item }}"
+    state: true
+    persistent: true

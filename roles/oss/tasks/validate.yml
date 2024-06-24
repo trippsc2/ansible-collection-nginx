@@ -1,0 +1,88 @@
+---
+- name: Gathering Facts
+  when:
+    - ansible_os_family is not defined or
+      ansible_distribution is not defined or
+      ansible_distribution_major_version is not defined
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - os_family
+      - distribution
+      - distribution_major_version
+
+- name: Validate RHEL major version
+  when:
+    - ansible_os_family == 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_major_version in _nginx_rhel_supported_versions
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
+    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is supported"
+
+- name: Validate non-RHEL distribution
+  when:
+    - ansible_os_family != 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution in _nginx_non_rhel_supported_distribution_versions.keys()
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
+    success_msg: "{{ ansible_distribution }} is supported. Checking version."
+
+- name: Validate non-RHEL distribution version
+  when:
+    - ansible_os_family != 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_major_version in _nginx_non_rhel_supported_distribution_versions[ansible_distribution]
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
+    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is supported"
+
+- name: Import OS variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Validate AppStream version
+  when:
+    - ansible_os_family == 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - nginx_appstream_version in _nginx_appstream_allowed_versions[ansible_distribution_major_version]
+    fail_msg: "NGINX {{ nginx_appstream_version }} is not supported on {{ ansible_distribution }} {{ ansible_distribution_major_version }}"
+    success_msg: "NGINX {{ nginx_appstream_version }} is supported on {{ ansible_distribution }} {{ ansible_distribution_major_version }}"
+
+- name: Validate user
+  when:
+    - nginx_user != _nginx_default_user
+  check_mode: true
+  ansible.builtin.user:
+    name: "{{ nginx_user }}"
+    state: present
+  register: _nginx_validate_user
+
+- name: Assert user
+  when:
+    - nginx_user != _nginx_default_user
+  ansible.builtin.assert:
+    that:
+      - not _nginx_validate_user.changed
+    fail_msg: "User {{ nginx_user }} does not exist"
+    success_msg: "User {{ nginx_user }} exists"
+
+- name: Validate group
+  when:
+    - nginx_group != _nginx_default_group
+  check_mode: true
+  ansible.builtin.group:
+    name: "{{ nginx_group }}"
+    state: present
+  register: _nginx_validate_group
+
+- name: Assert group
+  when:
+    - nginx_group != _nginx_default_group
+  ansible.builtin.assert:
+    that:
+      - not _nginx_validate_group.changed
+    fail_msg: "Group {{ nginx_group }} does not exist"
+    success_msg: "Group {{ nginx_group }} exists"

@@ -1,0 +1,43 @@
+{# NGINX Stream Log -- ngx_stream_log_module #}
+{%- macro log(data, context) %}
+{%- if context == 'stream' or
+       context == 'server' %}
+{%- for log in data.error_log | default([]) %}
+error_log {{ log.file }}{{ ' ' + log.level | string if log.level is defined }};
+{%- endfor %}
+{%- if data.access_log is defined %}
+{%- if data.access_log.off | default(false) %}
+access_log off;
+{%- else %}
+{%- for log in data.access_log.logs %}
+access_log {{ log.path -}}
+           {%- if log.format is defined -%}
+           {{- ' ' + log.format | string -}}
+           {{- ' buffer=' + log.buffer | string if log.buffer is defined -}}
+           {%- if log.gzip is defined and log.gzip.enabled | default(false) -%}
+           {{- ' gzip' -}}
+           {{- '=' + log.gzip.level | string if log.gzip.level is defined -}}
+           {%- endif -%}
+           {{- ' flush=' + log.flush | string if log.flush is defined -}}
+           {{- ' if=' + log.if | string if log.if is defined -}}
+           {%- endif %};
+{%- endfor %}
+{%- endif %}
+{%- endif %}
+{%- if data.open_log_file_cache is defined %}
+{%- if data.open_log_file_cache.off | default(false) %}
+open_log_file_cache off;
+{%- else %}
+open_log_file_cache max={{ data.log_open_log_file_cache.max -}}
+                    {{- ' inactive=' + data.log_open_log_file_cache.inactive | string if data.log_open_log_file_cache.inactive is defined -}}
+                    {{- ' min_uses=' + data.log_open_log_file_cache.min_uses | string if data.log_open_log_file_cache.min_uses is defined -}}
+                    {{- ' valid=' + data.log_open_log_file_cache.valid | string if data.log_open_log_file_cache.valid is defined }};
+{%- endif %}
+{%- endif %}
+
+{%- if context == 'stream' %}
+{%- for format in data.log_format | default([]) %}
+log_format {{ format.name }}{{ ' escape=' + format.escape | string if format.escape is defined }} {{ format.format }};
+{%- endfor %}
+{%- endif %}
+{%- endmacro -%}

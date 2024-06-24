@@ -1,0 +1,79 @@
+{# NGINX HTTP Access -- ngx_http_access_module #}
+{%- macro access(data) %}
+{%- for allow in data.allow | default([]) %}
+allow {{ allow }};
+{% endfor %}
+{%- for deny in data.deny | default([]) %}
+deny {{ deny }};
+{% endfor %}
+{% endmacro %}
+
+{# NGINX HTTP Auth Basic -- ngx_http_auth_basic_module #}
+{%- macro auth_basic(data) %}
+{%- if data.auth_basic is defined %}
+auth_basic {{ data.auth_basic }};
+{% endif %}
+{%- if data.auth_basic_user_file is defined %}
+auth_basic_user_file {{ data.auth_basic_user_file }};
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Auth Request -- ngx_http_auth_request_module #}
+{%- macro auth_request(data) %}
+{%- if data.auth_request is defined %}
+auth_request {{ data.auth_request }};
+{% endif %}
+{%- for request in data.auth_request_set | default([]) %}
+auth_request_set {{ request.variable }} {{ request.value }};
+{% endfor %}
+{% endmacro %}
+
+{# NGINX HTTP Auth JWT -- ngx_http_auth_jwt_module #}
+{%- macro auth_jwt(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' or
+       context == 'limit_except' %}
+{%- if data.auth_jwt is defined %}
+{%- if data.auth_jwt.off | default(false) %}
+auth_jwt off;
+{%- else %}
+auth_jwt {{ data.auth_jwt.realm -}}
+         {{- ' token=' + data.auth_jwt_enable.token | string if data.auth_jwt_enable.token is defined }};
+{% endif %}
+{% endif %}
+{%- if data.auth_jwt_key_file is defined %}
+auth_jwt_key_file {{ data.auth_jwt_key_file }};
+{% endif %}
+{%- if data.auth_jwt_key_request is defined %}
+auth_jwt_key_request {{ data.auth_jwt_key_request }};
+{% endif %}
+{%- if data.auth_jwt_type is defined %}
+auth_jwt_type {{ data.auth_jwt_type }};
+{% endif %}
+{%- for require in data.auth_jwt_require | default([]) %}
+auth_jwt_require {{ require.values | join(' ') -}}
+                 {{- ' error=' + require.error | string if require.error is defined }};
+{% endfor %}
+{% endif %}
+
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' %}
+{%- if data.auth_jwt_key_cache is defined %}
+auth_jwt_key_cache {{ data.auth_jwt_key_cache }};
+{% endif %}
+{%- if data.auth_jwt_leeway is defined %}
+auth_jwt_leeway {{ data.auth_jwt_leeway }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'http' %}
+{%- for claim in data.auth_jwt_claim_set | default([]) %}
+auth_jwt_claim_set {{ claim.variable }} {{ claim.claims | join(' ') }};
+{% endfor %}
+{%- for header in data.auth_jwt_header_set | default([]) %}
+auth_jwt_header_set {{ header.variable }} {{ header.claims | join(' ') }};
+{% endfor %}
+{% endif %}
+{% endmacro %}

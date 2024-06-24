@@ -1,0 +1,165 @@
+---
+- name: Ensure logrotate is configured for NGINX
+  when:
+    - nginx_configure_logrotate
+  become: true
+  ansible.builtin.template:
+    src: logrotate/nginx.j2
+    dest: /etc/logrotate.d/nginx
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure default HTML files are replaced with generic files
+  loop:
+    - 50x.html
+    - index.html
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: /usr/share/nginx/html/
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure main NGINX config file contains desired configuration
+  become: true
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0640'
+    validate: /usr/sbin/nginx -t -c %s
+  notify:
+    - _nginx_restart_nginx
+
+- name: Ensure NGINX HTTP config file directories exist
+  loop: "{{ nginx_http_config_files | map(attribute='destination') }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ item | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Ensure all NGINX HTTP config files exist as expected
+  loop: "{{ nginx_http_config_files }}"
+  become: true
+  ansible.builtin.template:
+    src: http.conf.j2
+    dest: "{{ item.destination }}"
+    owner: root
+    group: root
+    mode: '0640'
+  notify:
+    - _nginx_restart_nginx
+
+- name: Ensure NGINX mail config file directories exist
+  loop: "{{ nginx_mail_config_files | map(attribute='destination') }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ item | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Ensure all NGINX mail config files exist as expected
+  loop: "{{ nginx_mail_config_files }}"
+  become: true
+  ansible.builtin.template:
+    src: stream/default.conf.j2
+    dest: "{{ item.destination }}"
+    owner: root
+    group: root
+    mode: '0640'
+  notify:
+    - _nginx_restart_nginx
+
+- name: Ensure NGINX stream config file directories exist
+  loop: "{{ nginx_stream_config_files | map(attribute='destination') }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ item | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Ensure all NGINX stream config files exist as expected
+  loop: "{{ nginx_stream_config_files }}"
+  become: true
+  ansible.builtin.template:
+    src: stream.conf.j2
+    dest: "{{ item.destination }}"
+    owner: root
+    group: root
+    mode: '0640'
+  notify:
+    - _nginx_restart_nginx
+
+- name: Ensure NGINX SSL directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/nginx/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Set expected config files variable
+  ansible.builtin.set_fact:
+    _nginx_expected_config_files: >-
+      {{ nginx_http_config_files | map(attribute='destination') | list +
+         nginx_mail_config_files | map(attribute='destination') | list +
+         nginx_stream_config_files | map(attribute='destination') | list }}
+
+- name: Find NGINX config files
+  become: true
+  ansible.builtin.find:
+    paths:
+      - /etc/nginx/conf.d
+      - /etc/nginx/modules-enabled
+      - /etc/nginx/sites-enabled
+    file_type: file
+  register: _nginx_found_config_files
+
+- name: Delete unexpected NGINX config files
+  loop: "{{ _nginx_found_config_files.files | map(attribute='path') | list }}"
+  when:
+    - item not in _nginx_expected_config_files
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+
+- name: Find linked NGINX config files
+  become: true
+  ansible.builtin.find:
+    paths:
+      - /etc/nginx/conf.d
+      - /etc/nginx/modules-enabled
+      - /etc/nginx/sites-enabled
+    file_type: link
+  register: _nginx_found_linked_config_files
+
+- name: Delete unexpected NGINX linked config files
+  loop: "{{ _nginx_found_linked_config_files.files | map(attribute='path') | list }}"
+  when:
+    - item not in _nginx_expected_config_files
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure NGINX service is started and enabled
+  become: true
+  ansible.builtin.systemd_service:
+    name: nginx.service
+    state: started
+    enabled: true

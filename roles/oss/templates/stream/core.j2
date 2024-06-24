@@ -1,0 +1,82 @@
+{# NGINX Stream Core template -- ngx_stream_core_module #}
+{%- macro core(data, context) %}
+{%- if context == 'stream' or
+       context == 'server' %}
+{%- if data.preread_buffer_size is defined %}
+preread_buffer_size {{ data.preread_buffer_size }};
+{%- endif %}
+{%- if data.preread_timeout is defined %}
+preread_timeout {{ data.preread_timeout }};
+{%- endif %}
+{%- if data.proxy_protocol_timeout is defined %}
+proxy_protocol_timeout {{ data.proxy_protocol_timeout }};
+{%- endif %}
+{%- if data.resolver is defined %}
+resolver {{ data.resolver.addresses | join(' ') -}}
+         {{- ' valid=' + data.resolver.valid | string if data.resolver.valid is defined -}}
+         {{- ' ipv4=' + data.resolver.ipv4 | ternary('on', 'off') if data.resolver.ipv4 is defined -}}
+         {{- ' ipv6=' + data.resolver.ipv6 | ternary('on', 'off') if data.resolver.ipv6 is defined -}}
+         {{- ' status_zone=' + data.resolver.status_zone | string if data.resolver.status_zone is defined }};
+{%- endif %}
+{%- if data.resolver_timeout is defined %}
+resolver_timeout {{ data.resolver_timeout }};
+{%- endif %}
+{%- if data.tcp_nodelay is defined %}
+tcp_nodelay {{ data.tcp_nodelay | ternary('on', 'off') }};
+{%- endif %}
+{%- endif %}
+
+{%- if context == 'stream' %}
+{%- if data.server_names_hash_bucket_size is defined %}
+server_names_hash_bucket_size {{ server_names_hash_bucket_size }};
+{%- endif %}
+{%- if data.server_names_hash_max_size is defined %}
+server_names_hash_max_size {{ server_names_hash_max_size }};
+{%- endif %}
+{%- if data.variables_hash_bucket_size is defined %}
+variables_hash_bucket_size {{ data.variables_hash_bucket_size }};
+{%- endif %}
+{%- if data.variables_hash_max_size is defined %}
+variables_hash_max_size {{ data.variables_hash_max_size }};
+{%- endif %}
+{%- endif %}
+
+{%- if context == 'server' %}
+{%- for listen in data.listen | default([]) %}
+listen {{ listen.address if listen.address is defined -}}
+       {{- ':' if listen.address is defined and listen.port is defined -}}
+       {{- listen.port if listen.port is defined -}}
+       {{- ' default_server' if listen.default_server | default(false) -}}
+       {{- ' ssl' if listen.ssl | default(false) -}}
+       {{- ' udp' if listen.udp | default(false) -}}
+       {{- ' proxy_protocol' if listen.proxy_protocol | default(false) -}}
+       {{- ' setfib=' + listen.setfib | string if listen.setfib is defined -}}
+       {{- ' fastopen=' + listen.fastopen | string if listen.fastopen is defined -}}
+       {{- ' backlog=' + listen.backlog | string if listen.backlog is defined -}}
+       {{- ' rcvbuf=' + listen.rcvbuf | string if listen.rcvbuf is defined -}}
+       {{- ' sndbuf=' + listen.sndbuf | string if listen.sndbuf is defined -}}
+       {{- ' accept_filter=' + listen.accept_filter | string if listen.accept_filter is defined -}}
+       {{- ' deferred' if listen.deferred | default(false) -}}
+       {{- ' bind' if listen.bind | default(false) -}}
+       {{- ' ipv6only=' + listen.ipv6only | ternary('on', 'off') if listen.ipv6only is defined -}}
+       {{- ' reuseport' if listen.reuseport | default(false) -}}
+       {%- if listen.so_keepalive is defined -%}
+       {%- if listen.so_keepalive.on | default(false) -%}
+       {{- ' so_keepalive=on' -}}
+       {%- elif listen.so_keepalive.off | default(false) -%}
+       {{- ' so_keepalive=off' -}}
+       {%- else -%}
+       {{- ' so_keepalive=' -}}
+       {{- listen.so_keepalive.keepidle if listen.so_keepalive.keepidle is defined -}}
+       {{- ':' -}}
+       {{- listen.so_keepalive.keepintvl if listen.so_keepalive.keepintvl is defined -}}
+       {{- ':' -}}
+       {{- listen.so_keepalive.keepcnt if listen.so_keepalive.keepcnt is defined -}}
+       {%- endif -%}
+       {%- endif %};
+{%- endfor %}
+{%- if data.server_name is defined %}
+server_name {{ data.server_name | join(' ') }};
+{%- endif %}
+{%- endif %}
+{%- endmacro -%}

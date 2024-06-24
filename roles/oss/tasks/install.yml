@@ -1,0 +1,53 @@
+---
+- name: Ensure NGINX is installed
+  become: true
+  ansible.builtin.package:
+    name: "{{ _nginx_package }}"
+    state: present
+  notify:
+    - _nginx_restart_nginx
+
+- name: Ensure NGINX directory has expected permissions
+  become: true
+  ansible.builtin.file:
+    path: /etc/nginx
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Get directory contents of /etc/nginx
+  become: true
+  ansible.builtin.find:
+    paths: /etc/nginx
+    file_type: directory
+    recurse: true
+  register: _nginx_config_directories
+
+- name: Get file contents of /etc/nginx
+  become: true
+  ansible.builtin.find:
+    paths: /etc/nginx
+    file_type: file
+    recurse: true
+  register: _nginx_config_files
+
+- name: Ensure NGINX config files have expected permissions
+  loop: "{{ _nginx_config_directories.files }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Ensure NGINX config files have expected permissions
+  loop: "{{ _nginx_config_files.files }}"
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: file
+    owner: root
+    group: root
+    mode: '0640'

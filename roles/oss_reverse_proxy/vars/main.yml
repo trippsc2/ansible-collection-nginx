@@ -1,0 +1,89 @@
+---
+nginx_allow_https: true
+
+_nginxproxy_http_config_files:
+  - destination: /etc/nginx/conf.d/reject.conf
+    server:
+      - server_tokens: 'off'
+        return:
+          code: 404
+  - destination: /etc/nginx/conf.d/redirect.conf
+    server:
+      - listen:
+          - port: 80
+        server_name: "{{ nginxproxy_redirect_server_name }}"
+        server_tokens: 'off'
+        location:
+          - path: /
+            return:
+              code: 301
+              uri: "https://{{ nginxproxy_redirect_return_server_name }}$request_uri"
+          - modifier: '='
+            path: /basic_status
+            stub_status: true
+            log_not_found: false
+            allow:
+              - '127.0.0.1'
+              - '::1'
+            deny:
+              - all
+  - destination: /etc/nginx/conf.d/proxy.conf
+    client_body_timeout: 10
+    client_header_timeout: 10
+    client_max_body_size: "{{ nginxproxy_max_body_size }}"
+    keepalive_timeout: 10
+    large_client_header_buffers:
+      count: 2
+      size: 1k
+    send_timeout: 10
+    log_format:
+      - name: main
+        format: |
+          'server="$server_name" host="$host” dest_port="$server_port"' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'        
+    server:
+      - listen:
+          - port: 443
+            ssl: true
+            http2: true
+        server_name: "{{ nginxproxy_server_name }}"
+        server_tokens: 'off'
+        ssl_certificate:
+          - "{{ nginxproxy_server_certificate_path }}"
+        ssl_certificate_key:
+          - "{{ nginxproxy_server_certificate_key_path }}"
+        ssl_ciphers: ALL:!EXP:!NULL:!ADH:!LOW:!SSLv2:!SSLv3:!MD5:!RC4
+        ssl_prefer_server_ciphers: true
+        ssl_protocols:
+          tlsv12: true
+          tlsv13: true
+        ssl_stapling: "{{ nginxproxy_ssl_stapling }}"
+        ssl_stapling_verify: "{{ nginxproxy_ssl_stapling_verify }}"
+        add_header:
+          - field: Strict-Transport-Security
+            value: "\"max-age=15768000;\""
+        access_log:
+          logs:
+            - path: /var/log/nginx/access.log
+              format: main
+        location:
+          - path: /
+            proxy_pass: "{{ nginxproxy_proxy_address }}"
+            proxy_set_header:
+              - field: Host
+                value: $proxy_host
+              - field: X-Real-IP
+                value: $remote_addr
+              - field: X-Forwarded-For
+                value: $proxy_add_x_forwarded_for
+              - field: X-Forwarded-Proto
+                value: $scheme
+              - field: X-Forwarded-Host
+                value: $host
+              - field: X-Forwarded-Port
+                value: $server_port
+            proxy_hide_header:
+              - Server
+              - X-Powered-By
+
+nginx_http_config_files: >-
+  {{ _nginxproxy_http_config_files + nginxproxy_additional_http_config_files }}

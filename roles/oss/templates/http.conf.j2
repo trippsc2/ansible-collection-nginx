@@ -1,0 +1,216 @@
+{%- from 'http/upstream.j2' import upstream with context -%}
+{%- from 'http/core.j2' import core with context -%}
+{%- from 'http/modules.j2' import http2 with context -%}
+{%- from 'http/ssl.j2' import ssl with context -%}
+{%- from 'http/proxy.j2' import proxy with context -%}
+{%- from 'http/grpc.j2' import grpc with context -%}
+{%- from 'http/auth.j2' import access with context -%}
+{%- from 'http/auth.j2' import auth_basic with context -%}
+{%- from 'http/auth.j2' import auth_request with context -%}
+{%- from 'http/auth.j2' import auth_jwt with context -%}
+{%- from 'http/modules.j2' import stub_status with context -%}
+{%- from 'http/modules.j2' import autoindex with context -%}
+{%- from 'http/modules.j2' import gunzip with context -%}
+{%- from 'http/modules.j2' import gzip with context -%}
+{%- from 'http/modules.j2' import headers with context -%}
+{%- from 'http/modules.j2' import limit_req with context -%}
+{%- from 'http/modules.j2' import log with context -%}
+{%- from 'http/modules.j2' import map with context -%}
+{%- from 'http/modules.j2' import mirror with context -%}
+{%- from 'http/modules.j2' import realip with context -%}
+{%- from 'http/modules.j2' import rewrite with context -%}
+{%- from 'http/modules.j2' import split_clients with context -%}
+{%- from 'http/modules.j2' import sub_filter with context -%}
+
+{%- macro upstream_block(data) %}
+
+upstream {{ data.name }} {
+{% filter indent(width=4) %}
+{{ upstream(data) }}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro server_block(data) %}
+
+server {
+{% filter indent(width=4) %}
+    {{ core(data, 'server') }}
+{{- http2(data, 'server') }}
+{{- ssl(data) }}
+{{- proxy(data, 'server') }}
+{{- grpc(data, 'server') }}
+{{- access(data) }}
+{{- auth_basic(data) }}
+{{- auth_request(data) }}
+{{- auth_jwt(data, 'server') }}
+{{- stub_status(data) }}
+{{- autoindex(data) }}
+{{- gunzip(data) }}
+{{- gzip(data, 'server') }}
+{{- headers(data) }}
+{{- limit_req(data, 'server') }}
+{{- log(data, 'server') }}
+{{- mirror(data) }}
+{{- realip(data) }}
+{{- rewrite(data, 'server') }}
+{{- sub_filter(data) }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{%- for location in data.location | default([]) %}
+{{- location_block(location) }}
+{% endfor %}
+{%- for server_if in data.if | default([]) %}
+{{- server_if_block(server_if) }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro location_block(data) %}
+
+location {{ data.modifier + ' ' if data.modifier is defined }} {{ data.path }} {
+{% filter indent(width=4) %}
+    {{ core(data, 'location') }}
+{{- http2(data, 'location') }}
+{{- proxy(data, 'location') }}
+{{- grpc(data, 'location') }}
+{{- access(data) }}
+{{- auth_basic(data) }}
+{{- auth_request(data) }}
+{{- auth_jwt(data, 'location') }}
+{{- stub_status(data) }}
+{{- autoindex(data) }}
+{{- gunzip(data) }}
+{{- gzip(data, 'location') }}
+{{- headers(data) }}
+{{- limit_req(data, 'location') }}
+{{- log(data, 'location') }}
+{{- mirror(data) }}
+{{- realip(data) }}
+{{- rewrite(data, 'location') }}
+{{- sub_filter(data) }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{%- for location in data.location | default([]) %}
+{{- location_block(location) }}
+{% endfor %}
+{%- for location_if in data.if | default([]) %}
+{{- location_if_block(location_if) }}
+{% endfor %}
+{%- for limit_except in data.limit_except | default([]) %}
+{{- limit_except_block(limit_except) }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro server_if_block(data) %}
+
+if ({{ data.condition }}) {
+{% filter indent(width=4) %}
+    {{ rewrite(data, 'serverif') }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro location_if_block(data) %}
+
+if ({{ data.condition }}) {
+{% filter indent(width=4) %}
+    {{ core(data, 'locationif') }}
+{{- proxy(data, 'locationif') }}
+{{- grpc(data, 'locationif') }}
+{{- gzip(data, 'locationif') }}
+{{- headers(data) }}
+{{- log(data, 'locationif') }}
+{{- rewrite(data, 'locationif') }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro limit_except_block(data) %}
+
+limit_except {{ data.methods | join(' ') }} {
+{% filter indent(width=4) %}
+    {{ proxy(data, 'limit_except') }}
+{{- access(data) }}
+{{- auth_basic(data) }}
+{{- auth_jwt(data, 'limit_except') }}
+{{- log(data, 'limit_except') }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro map_block(data) %}
+
+map {{ data.string }} {{ data.variable }} {
+{% filter indent(width=4) %}
+    {{ map(data, 'map') }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro split_clients_block(data) %}
+
+split_clients {{ data.string }} {{ data.variable }} {
+{% filter indent(width=4) %}
+    {{ split_clients(data) }}
+{%- for directive in data.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{{- ansible_managed | comment }}
+
+{{ core(item, 'http') }}
+{{- http2(item, 'http') }}
+{{- ssl(item) }}
+{{- proxy(item, 'http') }}
+{{- grpc(item, 'http') }}
+{{- access(item) }}
+{{- auth_basic(item) }}
+{{- auth_request(item) }}
+{{- auth_jwt(item, 'http') }}
+{{- autoindex(item) }}
+{{- gunzip(item) }}
+{{- gzip(item, 'http') }}
+{{- headers(item) }}
+{{- limit_req(item, 'http') }}
+{{- log(item, 'http') }}
+{{- map(item, 'http') }}
+{{- mirror(item) }}
+{{- realip(item) }}
+{{- rewrite(item, 'http') }}
+{{- sub_filter(item) }}
+{%- for directive in item.custom_directives | default([]) %}
+{{- directive }}
+{% endfor %}
+{%- for upstream in item.upstream | default([]) %}
+{{- upstream_block(upstream) }}
+{% endfor %}
+{%- for server in item.server | default([]) %}
+{{- server_block(server) }}
+{% endfor %}
+{%- for map in item.map | default([]) %}
+{{- map_block(map) }}
+{% endfor %}
+{%- for split_clients in item.split_clients | default([]) %}
+{{- split_clients_block(split_clients) }}
+{% endfor %}

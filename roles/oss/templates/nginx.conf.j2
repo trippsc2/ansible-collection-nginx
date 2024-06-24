@@ -1,0 +1,81 @@
+{{ ansible_managed | comment }}
+
+user {{ nginx_user }} {{ nginx_group }};
+{% if nginx_worker_cpu_affinity is defined %}
+worker_cpu_affinity{{ ' auto' if nginx_worker_cpu_affinity.auto | default(false) }}{{ ' ' + nginx_worker_cpu_affinity.mask if nginx_worker_cpu_affinity.mask is defined }};
+{% endif %}
+{% if nginx_worker_priority is defined %}
+worker_priority {{ nginx_worker_priority }};
+{% endif %}
+{% if nginx_worker_processes.auto | default(false) %}
+worker_processes auto;
+{% else %}
+worker_processes {{ nginx_worker_processes.processes }};
+{% endif %}
+{% if nginx_worker_rlimit_core is defined %}
+worker_rlimit_core {{ nginx_worker_rlimit_core }};
+{% endif %}
+{% if nginx_worker_rlimit_nofile is defined %}
+worker_rlimit_nofile {{ nginx_worker_rlimit_nofile }};
+{% endif %}
+{% if nginx_worker_shutdown_timeout is defined %}
+worker_shutdown_timeout {{ nginx_worker_shutdown_timeout }};
+{% endif %}
+error_log {{ nginx_error_log.file }}{{ ' ' + nginx_error_log.level if nginx_error_log.level is defined }};
+pid {{ nginx_pid }};
+{% if nginx_env | length > 0 %}
+{% for variable, value in nginx_env.items() %}
+env {{ variable }}={{ value }};
+{% endfor %}
+{% endif %}
+{% if nginx_pcre_jit is defined %}
+pcre_jit {{ nginx_pcre_jit | ternary('on', 'off') }};
+{% endif %}
+{% if nginx_ssl_engine is defined %}
+ssl_engine {{ nginx_ssl_engine }};
+{% endif %}
+{% for pool in nginx_thread_pool %}
+thread_pool {{ pool.name }} threads={{ pool.threads }}{{ ' max_queue=' + pool.max_queue | string if pool.max_queue is defined }};
+{% endfor %}
+{% if nginx_timer_resolution is defined %}
+timer_resolution {{ nginx_timer_resolution }};
+{% endif %}
+{% if nginx_working_directory is defined %}
+working_directory {{ nginx_working_directory }};
+{% endif %}
+
+events {
+{% if nginx_events_multi_accept is defined %}
+    multi_accept {{ nginx_events_multi_accept | ternary('on', 'off') }};
+{% endif %}
+{% if nginx_events_worker_aio_requests is defined %}
+    worker_aio_requests {{ nginx_events_worker_aio_requests }};
+{% endif %}
+{% if nginx_events_worker_connections is defined %}
+    worker_connections {{ nginx_events_worker_connections }};
+{% endif %}
+}
+{% if nginx_http_includes | length > 0 %}
+
+http {
+{% for file in nginx_http_includes %}
+    include {{ file }};
+{% endfor %}
+}
+{% endif %}
+{% if nginx_mail_includes | length > 0 %}
+
+mail {
+{% for file in nginx_mail_includes %}
+    include {{ file }};
+{% endfor %}
+}
+{% endif %}
+{% if nginx_stream_includes | length > 0 %}
+
+stream {
+{% for file in nginx_stream_includes %}
+    include {{ file }};
+{% endfor %}
+}
+{% endif %}

@@ -1,0 +1,74 @@
+---
+argument_specs:
+  main:
+    short_description: NGINX Reverse Proxy
+    description:
+      - This role installs and configures NGINX as a reverse proxy.
+    author: Jim Tarpley
+    options:
+      nginxproxy_additional_http_config_files:
+        type: list
+        required: false
+        default: []
+        description:
+          - A list of additional configuration files to include in the HTTP server block.
+          - The files must be located in the `files` directory of the role.
+          - See trippsc2.nginx.oss role for formatting information.
+      nginxproxy_ssl_stapling:
+        type: bool
+        required: false
+        default: true
+        description:
+          - Enable or disable SSL stapling.
+      nginxproxy_ssl_stapling_verify:
+        type: bool
+        required: false
+        default: true
+        description:
+          - Enable or disable SSL stapling verification.
+      nginxproxy_redirect_server_name:
+        type: str
+        required: false
+        default: _
+        description:
+          - The server name to which to accept connections on HTTP port 80 and redirect to HTTPS port 443.
+          - If set to `_`, the server name is not checked.
+      nginxproxy_redirect_return_server_name:
+        type: str
+        required: false
+        default: $host
+        description:
+          - The server name to which the is redirected when connecting to the server on HTTP port 80.
+          - If set to `$host`, the server name from the request is unchanged.
+      nginxproxy_max_body_size:
+        type: str
+        required: false
+        default: 100K
+        description:
+          - The maximum allowed size of the client request body.
+          - If the size in a request exceeds the configured value, the 413 (Request Entity Too Large) error is returned to the client.
+      nginxproxy_server_name:
+        type: str
+        required: true
+        description:
+          - The server name to which to accept connections on HTTPS port 443.
+          - If set to `_`, the server name is not checked.
+      nginxproxy_server_certificate_path:
+        type: path
+        required: false
+        default: /etc/pki/tls/certs/nginx.crt
+        description:
+          - The path to the server certificate file.
+      nginxproxy_server_certificate_key_path:
+        type: path
+        required: false
+        default: /etc/pki/tls/private/nginx.key
+        description:
+          - The path to the server certificate key file.
+      nginxproxy_proxy_address:
+        type: str
+        required: true
+        description:
+          - The address of the server to which to proxy requests.
+          - The address must include the protocol and port number.
+          - 'Example: http://127.0.0.1:8080'

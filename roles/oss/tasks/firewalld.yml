@@ -1,0 +1,38 @@
+---
+- name: Allow HTTP traffic
+  become: true
+  when:
+    - nginx_allow_http
+  ansible.posix.firewalld:
+    service: http
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Allow HTTPS traffic
+  become: true
+  when:
+    - nginx_allow_https
+  ansible.posix.firewalld:
+    service: https
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Allow additional TCP ports
+  become: true
+  loop: "{{ nginx_firewall_tcp_ports }}"
+  ansible.posix.firewalld:
+    port: "{{ item }}/tcp"
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Allow additional UDP ports
+  become: true
+  loop: "{{ nginx_firewall_udp_ports }}"
+  ansible.posix.firewalld:
+    port: "{{ item }}/udp"
+    state: enabled
+    permanent: true
+    immediate: true

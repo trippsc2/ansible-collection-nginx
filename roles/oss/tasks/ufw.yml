@@ -1,0 +1,38 @@
+---
+- name: Allow HTTP traffic
+  become: true
+  when:
+    - nginx_allow_http
+  community.general.ufw:
+    port: 80
+    proto: tcp
+    rule: allow
+    state: enabled
+
+- name: Allow HTTPS traffic
+  become: true
+  when:
+    - nginx_allow_https
+  community.general.ufw:
+    port: 443
+    proto: tcp
+    rule: allow
+    state: enabled
+
+- name: Allow additional TCP ports
+  become: true
+  loop: "{{ nginx_firewall_tcp_ports }}"
+  community.general.ufw:
+    port: "{{ item }}"
+    proto: tcp
+    rule: allow
+    state: enabled
+
+- name: Allow additional UDP ports
+  become: true
+  loop: "{{ nginx_firewall_udp_ports }}"
+  community.general.ufw:
+    port: "{{ item }}"
+    proto: udp
+    rule: allow
+    state: enabled

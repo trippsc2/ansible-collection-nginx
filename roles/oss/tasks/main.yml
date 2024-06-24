@@ -1,0 +1,24 @@
+---
+- name: Validate
+  ansible.builtin.import_tasks: validate.yml
+
+- name: Install NGINX
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure SELinux
+  when:
+    - nginx_configure_selinux
+  ansible.builtin.include_tasks: selinux.yml
+
+- name: Configure firewalld
+  when:
+    - nginx_configure_firewalld
+  ansible.builtin.include_tasks: firewalld.yml
+
+- name: Configure UFW
+  when:
+    - nginx_configure_ufw
+  ansible.builtin.include_tasks: ufw.yml
+
+- name: Configure NGINX
+  ansible.builtin.import_tasks: configure.yml

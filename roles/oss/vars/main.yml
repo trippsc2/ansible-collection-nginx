@@ -1,0 +1,22 @@
+---
+_nginx_rhel_supported_versions:
+  - '8'
+  - '9'
+
+_nginx_non_rhel_supported_distribution_versions:
+  Debian:
+    - '11'
+    - '12'
+  Ubuntu:
+    - '20'
+    - '22'
+    - '24'
+
+_nginx_appstream_allowed_versions:
+  '8':
+    - '1.22'
+    - '1.24'
+  '9':
+    - '1.20'
+    - '1.22'
+    - '1.24'

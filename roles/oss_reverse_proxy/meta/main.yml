@@ -1,0 +1,32 @@
+---
+galaxy_info:
+  author: Jim Tarpley
+  namespace: trippsc2
+  role_name: oss_reverse_proxy
+  description: This role installs and configures NGINX OSS as a reverse proxy.
+
+  license: MIT
+
+  min_ansible_version: '2.14'
+
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - '8'
+        - '9'
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+
+collections:
+  - community.crypto
+  - community.general
+
+dependencies:
+  - role: trippsc2.nginx.oss

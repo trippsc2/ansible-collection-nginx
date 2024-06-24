@@ -1,0 +1,35 @@
+{%- from 'stream/upstream.j2' import upstream with context -%}
+{%- from 'stream/core.j2' import core with context -%}
+{%- from 'stream/ssl.j2' import ssl with context -%}
+{%- from 'stream/proxy.j2' import proxy with context -%}
+{%- from 'stream/log.j2' import log with context -%}
+
+{%- macro server_block(data) %}
+server {
+{% filter indent(width=4) %}
+{{- core(data, 'server') }}
+{{- ssl(data) }}
+{{- proxy(data, 'server') }}
+{{- log(data, 'server') }}
+{%- for directive in data.custom_directives | default([]) %}
+{{ directive }}
+{%- endfor %}
+{% endfilter %}
+}
+{%- endmacro -%}
+
+{{- ansible_managed | comment }}
+
+{% if item.upstreams is defined %}
+{{ upstream(item.upstreams) }}
+{% endif %}
+{{ core(item, 'stream') }}
+{{- ssl(item) }}
+{{- proxy(item, 'stream') }}
+{{- log(item, 'stream') }}
+{%- for directive in item.custom_directives | default([]) %}
+{{ directive }}
+{%- endfor %}
+{%- for server in item.server | default([]) %}
+{{ server_block(server) }}
+{%- endfor %}

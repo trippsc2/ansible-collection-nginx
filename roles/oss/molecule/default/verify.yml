@@ -1,0 +1,48 @@
+---
+- name: Verify
+  hosts:
+    - subjects
+  tasks:
+    - name: Check if NGINX is installed
+      become: true
+      ansible.builtin.package:
+        name: nginx
+        state: present
+      register: _dnf_package
+
+    - name: Assert
+      ansible.builtin.assert:
+        that:
+          - not _dnf_package.changed
+        fail_msg: NGINX not installed
+        success_msg: NGINX installed
+
+    - name: Check if NGINX is enabled
+      become: true
+      check_mode: true
+      ansible.builtin.systemd_service:
+        name: nginx.service
+        enabled: true
+      register: _service_enabled
+
+    - name: Assert
+      ansible.builtin.assert:
+        that:
+          - not _service_enabled.changed
+        fail_msg: NGINX not enabled
+        success_msg: NGINX enabled
+
+    - name: Check if NGINX is running
+      become: true
+      check_mode: true
+      ansible.builtin.systemd_service:
+        name: nginx.service
+        state: started
+      register: _service_running
+
+    - name: Assert
+      ansible.builtin.assert:
+        that:
+          - not _service_running.changed
+        fail_msg: NGINX not running
+        success_msg: NGINX running

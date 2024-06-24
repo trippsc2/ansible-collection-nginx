@@ -1,0 +1,6 @@
+---
+nginxproxy_ssl_stapling: false
+nginxproxy_ssl_stapling_verify: false
+
+nginxproxy_server_name: localhost
+nginxproxy_proxy_address: http://127.0.0.1:8080

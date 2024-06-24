@@ -1,0 +1,15 @@
+{{ ansible_managed | comment }}
+
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate {{ nginx_logrotate_retention }}
+    compress
+    delaycompress
+    notifempty
+    create {{ nginx_log_mode }} {{ nginx_user }} {{ nginx_group }}
+    sharedscripts
+    postrotate
+        nginx -s reopen
+    endscript
+}

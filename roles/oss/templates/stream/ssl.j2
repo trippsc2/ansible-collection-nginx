@@ -1,0 +1,86 @@
+{# NGINX Stream SSL template -- ngx_stream_ssl_module #}
+{%- macro ssl(data) %}
+{%- if data.ssl_alpn is defined %}
+ssl_alpn {{ data.ssl_alpn | join(' ') }};
+{%- endif %}
+{%- for certificate in data.ssl_certificate | default([]) %}
+ssl_certificate {{ certificate }};
+{%- endfor %}
+{%- for key in data.ssl_certificate_key | default([]) %}
+ssl_certificate_key {{ key }};
+{%- endfor %}
+{%- if data.ssl_ciphers is defined %}
+ssl_ciphers {{ data.ssl_ciphers }};
+{%- endif %}
+{%- if data.ssl_client_certificate is defined %}
+ssl_client_certificate {{ data.ssl_client_certificate }};
+{%- endif %}
+{%- for command in data.ssl_conf_command | default([]) %}
+ssl_conf_command {{ command }};
+{%- endfor %}
+{%- if data.ssl_crl is defined %}
+ssl_crl {{ data.ssl_crl }};
+{%- endif %}
+{%- if data.ssl_dhparam is defined %}
+ssl_dhparam {{ data.ssl_dhparam }};
+{%- endif %}
+{%- if data.ssl_ecdh_curve is defined %}
+ssl_ecdh_curve {{ data.ssl_ecdh_curve }};
+{%- endif %}
+{%- if data.ssl_handshake_timeout is defined %}
+ssl_handshake_timeout {{ data.ssl_handshake_timeout }};
+{%- endif %}
+{%- if data.ssl_password_file is defined %}
+ssl_password_file {{ data.ssl_password_file }};
+{%- endif %}
+{%- if data.ssl_prefer_server_ciphers is defined %}
+ssl_prefer_server_ciphers {{ data.ssl_prefer_server_ciphers | ternary('on', 'off') }};
+{%- endif %}
+{%- if data.ssl_protocols is defined and
+       (data.ssl_protocols.sslv2 | default(false) or
+       data.ssl_protocols.sslv3 | default(false) or
+       data.ssl_protocols.tlsv1 | default(false) or
+       data.ssl_protocols.tlsv11 | default(false) or
+       data.ssl_protocols.tlsv12 | default(false) or
+       data.ssl_protocols.tlsv13 | default(false)) %}
+ssl_protocols{{ ' SSLv2' if data.ssl_protocols.sslv2 | default(false) -}}
+             {{- ' SSLv3' if data.ssl_protocols.sslv3 | default(false) -}}
+             {{- ' TLSv1' if data.ssl_protocols.tlsv1 | default(false) -}}
+             {{- ' TLSv1.1' if data.ssl_protocols.tlsv11 | default(false) -}}
+             {{- ' TLSv1.2' if data.ssl_protocols.tlsv12 | default(false) -}}
+             {{- ' TLSv1.3' if data.ssl_protocols.tlsv13 | default(false) }};
+{%- endif %}
+{%- if data.ssl_reject_handshake is defined %}
+ssl_reject_handshake {{ data.ssl_reject_handshake | ternary('on', 'off') }};
+{%- endif %}
+{%- if data.ssl_session_cache is defined %}
+{%- if data.ssl_session_cache.off | default(false) %}
+ssl_session_cache off;
+{%- elif data.ssl_session_cache.none | default(false) %}
+ssl_session_cache none;
+{%- else %}
+ssl_session_cache{%- if data.ssl_session_cache.builtin is defined -%}
+                 {{- ' builtin:' + data.ssl_session_cache.builtin.size | string if data.ssl_session_cache.builtin.size is defined else ' builtin' -}}
+                 {%- endif -%}
+                 {{- ' shared:' + data.ssl_session_cache.shared.name + ':' + data.ssl_session_cache.shared.size if data.ssl_session_cache.shared is defined -}};
+{%- endif %}
+{%- endif %}
+{%- for key in data.ssl_session_ticket_key | default([]) %}
+ssl_session_ticket_key {{ key }};
+{%- endfor %}
+{%- if data.ssl_session_tickets is defined %}
+ssl_session_tickets {{ data.ssl_session_tickets | ternary('on', 'off') }};
+{%- endif %}
+{%- if data.ssl_session_timeout is defined %}
+ssl_session_timeout {{ data.ssl_session_timeout }};
+{%- endif %}
+{%- if data.ssl_trusted_certificate is defined %}
+ssl_trusted_certificate {{ data.ssl_trusted_certificate }};
+{%- endif %}
+{%- if data.ssl_verify_client is defined %}
+ssl_verify_client {{ data.ssl_verify_client }};
+{%- endif %}
+{%- if data.ssl_verify_depth is defined %}
+ssl_verify_depth {{ data.ssl_verify_depth }};
+{%- endif %}
+{%- endmacro -%}

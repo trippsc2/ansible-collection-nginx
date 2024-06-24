@@ -1,0 +1,43 @@
+{# NGINX HTTP Upstream template -- ngx_http_upstream_module #}
+{%- macro upstream(upstreams) %}
+{%- for upstream in upstreams %}
+upstream {{ upstream.name }} {
+{%- for server in upstream.server | default([]) %}
+    server {{ server.address -}}
+           {{- ' weight=' + server.weight | string if server.weight is defined -}}
+           {{- ' max_conns=' + server.max_conns | string if server.max_conns is defined -}}
+           {{- ' max_fails=' + server.max_fails | string if server.max_fails is defined -}}
+           {{- ' fail_timeout=' + server.fail_timeout | string if server.fail_timeout is defined -}}
+           {{- ' backup' if server.backup | default(false) -}}
+           {{- ' down' if server.down | default(false) }};
+{% endfor %}
+{%- if upstream.zone is defined %}
+    zone {{ upstream.zone.name }}{{ ' ' + upstream.zone.size | string if upstream.zone.size is defined }};
+{% endif %}
+{%- if upstream.load_balancing_method == 'hash' and upstream.hash is defined %}
+    hash {{ upstream.hash.key }}{{ ' consistent' if upstream.hash.consistent | default(false) }};
+{%- elif upstream.load_balancing_method == 'ip_hash' %}
+    ip_hash;
+{%- elif upstream.load_balancing_method == 'least_conn' %}
+    least_conn;
+{%- elif upstream.load_balancing_method == 'random' %}
+    random{% if (upstream.random | default({})).two is defined -%}
+          {{- ' two' -}}
+          {{- ' ' + upstream.random.two.method if upstream.random.two.method is defined -}}
+          {%- endif %};
+{% endif %}
+{%- if upstream.keepalive is defined %}
+    keepalive {{ upstream.keepalive }};
+{% endif %}
+{%- if upstream.keepalive_requests is defined %}
+    keepalive_requests {{ upstream.keepalive_requests }};
+{% endif %}
+{%- if upstream.keepalive_time is defined %}
+    keepalive_time {{ upstream.keepalive_time }};
+{% endif %}
+{%- if upstream.keepalive_timeout is defined %}
+    keepalive_timeout {{ upstream.keepalive_timeout }};
+{% endif %}
+}
+{% endfor %}
+{% endmacro %}

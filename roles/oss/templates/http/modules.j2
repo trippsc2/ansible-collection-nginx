@@ -1,0 +1,346 @@
+{# NGINX HTTP/2 -- ngx_http_v2_module #}
+{%- macro http2(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' %}
+{%- if data.http2_chunk_size is defined %}
+http2_chunk_size {{ data.http2_chunk_size }};
+{% endif %}
+{%- if data.http2_push is defined %}
+http2_push {{ data.http2_push }};
+{% endif %}
+{%- if data.http2_push_preload is defined %}
+http2_push_preload {{ data.http2_push_preload | ternary('on', 'off') }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'http' or
+       context == 'server' %}
+{%- if data.http2_body_preread_size is defined %}
+http2_body_preread_size {{ data.http2_body_preread_size }};
+{% endif %}
+{%- if data.http2_idle_timeout is defined %}
+http2_idle_timeout {{ data.http2_idle_timeout }};
+{% endif %}
+{%- if data.http2_max_concurrent_pushes is defined %}
+http2_max_concurrent_pushes {{ data.http2_max_concurrent_pushes }};
+{% endif %}
+{%- if data.http2_max_concurrent_streams is defined %}
+http2_max_concurrent_streams {{ data.http2_max_concurrent_streams }};
+{% endif %}
+{%- if data.http2_max_field_size is defined %}
+http2_max_field_size {{ data.http2_max_field_size }};
+{% endif %}
+{%- if data.http2_max_header_size is defined %}
+http2_max_header_size {{ data.http2_max_header_size }};
+{% endif %}
+{%- if data.http2_max_requests is defined %}
+http2_max_requests {{ data.http2_max_requests }};
+{% endif %}
+{%- if data.http2_recv_timeout is defined %}
+http2_recv_timeout {{ data.http2_recv_timeout }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'http' %}
+{%- if data.http2_recv_buffer_size is defined %}
+http2_recv_buffer_size {{ data.http2_recv_buffer_size }};
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX OSS HTTP stub status -- ngx_http_stub_status_module #}
+{%- macro stub_status(data) %}
+{%- if data.stub_status | default(false) %}
+stub_status;
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Autoindex -- ngx_http_autoindex_module #}
+{%- macro autoindex(data) %}
+{%- if data.autoindex is defined %}
+autoindex {{ data.autoindex | ternary('on', 'off') }};
+{% endif %}
+{%- if data.autoindex_exact_size is defined %}
+autoindex_exact_size {{ data.autoindex_exact_size | ternary('on', 'off') }};
+{% endif %}
+{%- if data.autoindex_format is defined %}
+autoindex_format {{ data.autoindex_format }};
+{% endif %}
+{%- if data.autoindex_localtime is defined %}
+autoindex_localtime {{ data.autoindex_localtime | ternary('on', 'off') }};
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP GUNZIP -- ngx_http_gunzip_module #}
+{%- macro gunzip(data) %}
+{%- if data.gunzip is defined %}
+gunzip {{ data.gunzip | ternary('on', 'off') }};
+{% endif %}
+{%- if data.gunzip_buffers is defined %}
+gunzip_buffers {{ data.gunzip_buffers.number }} {{ data.gunzip_buffers.size }};
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP GZIP -- ngx_http_gzip_module #}
+{%- macro gzip(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' or
+       context == 'locationif' %}
+{%- if data.gzip is defined %}
+gzip {{ data.gzip | ternary('on', 'off') }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' %}
+{%- if data.gzip_buffers is defined %}
+gzip_buffers {{ data.gzip_buffers.number }} {{ data.gzip_buffers.size }};
+{% endif %}
+{%- if data.gzip_comp_level is defined %}
+gzip_comp_level {{ data.gzip_comp_level }};
+{% endif %}
+{%- if data.gzip_disable is defined %}
+gzip_disable {{ data.gzip_disable | join(' ') }};
+{% endif %}
+{%- if data.gzip_http_version is defined %}
+gzip_http_version {{ data.gzip_http_version }};
+{% endif %}
+{%- if data.gzip_min_length is defined %}
+gzip_min_length {{ data.gzip_min_length }};
+{% endif %}
+{%- if data.gzip_proxied is defined %}
+{%- if data.gzip_proxied.off | default(false) %}
+gzip_proxied off;
+{%- elif data.gzip_proxied.any | default(false) %}
+gzip_proxied any;
+{%- else %}
+gzip_proxied {{ data.gzip_proxied.values | join(' ') }};
+{% endif %}
+{% endif %}
+{%- if data.gzip_types is defined %}
+gzip_types {{ data.gzip_types | join(' ') }};
+{% endif %}
+{%- if data.gzip_vary is defined %}
+gzip_vary {{ data.gzip_vary | ternary('on', 'off') }};
+{% endif %}
+{%- if data.gzip_static is defined %}
+gzip_static {{ data.gzip_static }};
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Headers -- ngx_http_headers_module #}
+{%- macro headers(data) %}
+{%- for header in data.add_header | default([]) %}
+add_header {{ header.field }} {{ header.value }}{{ ' always' if header.always | default(false) }};
+{% endfor %}
+{%- for trailer in data.add_trailer | default([]) %}
+add_trailer {{ trailer.field }} {{ trailer.value }}{{ ' always' if trailer.always | default(false) }};
+{% endfor %}
+{%- if data.expires is defined %}
+{%- if data.expires.off | default(false) %}
+expires off;
+{%- elif data.expires.max | default(false) %}
+expires max;
+{%- elif data.expires.epoch | default(false) %}
+expires epoch;
+{%- else %}
+expires {{ 'modified ' if data.expires.modified | default(false) }}{{ data.expires.time }};
+{% endif %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Limit Req -- ngx_http_limit_req_module #}
+{%- macro limit_req(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' %}
+{%- for limit in data.limit_req | default([]) %}
+limit_req zone={{ limit.zone -}}
+               {{- ' burst=' + limit.burst | string if limit.burst is defined -}}
+               {{- ' nodelay' if limit.nodelay | default(false) else ' delay=' + limit.delay | string if limit.delay is defined }};
+{% endfor %}
+{%- if data.limit_req_dry_run is defined %}
+limit_req_dry_run {{ data.limit_req_dry_run | ternary('on', 'off') }};
+{% endif %}
+{%- if data.limit_req_log_level is defined %}
+limit_req_log_level {{ data.limit_req_log_level }};
+{% endif %}
+{%- if data.limit_req_status is defined %}
+limit_req_status {{ data.limit_req_status }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'http' %}
+{%- for zone in data.limit_req_zone | default([]) %}
+limit_req_zone {{ zone.key }} zone={{ zone.name }}:{{ zone.size }} rate={{ zone.rate }};
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Log -- ngx_http_log_module #}
+{%- macro log(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' or
+       context == 'locationif' or
+       context == 'limit_except' %}
+{%- if data.access_log is defined %}
+{%- if data.access_log.off | default(false) %}
+access_log off;
+{%- else %}
+{%- for log in data.access_log.logs | default([]) %}
+access_log {{ log.path -}}
+           {%- if log.format is defined -%}
+           {{- ' ' + log.format | string -}}
+           {{- ' buffer=' + log.buffer | string if log.buffer is defined -}}
+           {%- if log.gzip is defined -%}
+           {{- ' gzip' -}}
+           {{- '=' + log.gzip.level | string if log.gzip.level is defined -}}
+           {%- endif -%}
+           {{- ' flush=' + log.flush | string if log.flush is defined -}}
+           {{- ' if=' + log.if | string if log.if is defined -}}
+           {%- endif %};
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endif %}
+
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' %}
+{%- if data.open_log_file_cache is defined %}
+{%- if data.open_log_file_cache.off | default(false) %}
+open_log_file_cache off;
+{%- else %}
+open_log_file_cache max={{ data.open_log_file_cache.max -}}
+                    {{- ' inactive=' + data.open_log_file_cache.inactive | string if data.open_log_file_cache.inactive is defined -}}
+                    {{- ' min_uses=' + data.open_log_file_cache.min_uses | string if data.open_log_file_cache.min_uses is defined -}}
+                    {{- ' valid=' + data.open_log_file_cache.valid | string if data.open_log_file_cache.valid is defined }};
+{% endif %}
+{% endif %}
+{%- for log in data.error_log | default([]) %}
+error_log {{ log.file }}{{ ' ' + log.level | string if data.log.level is defined }};
+{% endfor %}
+{% endif %}
+
+{%- if context == 'http' %}
+{%- for format in data.log_format | default([]) %}
+log_format {{ format.name -}}
+           {{- ' escape=' + format.escape | string if format.escape is defined -}}
+           {{- ' ' + format.format | string }};
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Map -- ngx_http_map_module #}
+{%- macro map(data, context) %}
+{%- if context == 'http' %}
+{%- if data.map_hash_bucket_size is defined %}
+map_hash_bucket_size {{ data.hash_bucket_size }};
+{% endif %}
+{%- if data.map_hash_max_size is defined %}
+map_hash_max_size {{ data.hash_max_size }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'map' %}
+{%- if data.hostnames | default(false) %}
+hostnames;
+{% endif %}
+{%- if map_data.volatile | default(false) %}
+volatile;
+{% endif %}
+{%- for content_line in map_data.content | default([]) %}
+{{ content_line.match }} {{ content_line.value }};
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Mirror -- ngx_http_mirror_module #}
+{%- macro mirror(data) %}
+{%- if data.mirror is defined %}
+{%- if data.mirror.off | default(false) %}
+mirror off;
+{%- else %}
+{%- for uri in data.mirror.uris %}
+mirror {{ uri }};
+{% endfor %}
+{% endif %}
+{% endif %}
+{%- if data.mirror_request_body is defined %}
+mirror_request_body {{ mirror.request_body | ternary('on', 'off') }};
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP RealIP -- ngx_http_realip_module #}
+{%- macro realip(data) %}
+{%- if data.set_real_ip_from is defined %}
+set_real_ip_from {{ data.set_real_ip_from }};
+{% endif %}
+{%- if data.real_ip_header is defined %}
+real_ip_header {{ data.real_ip_header }};
+{% endif %}
+{%- if data.real_ip_recursive is defined %}
+real_ip_recursive {{ data.real_ip_recursive | ternary('on', 'off') }};
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Rewrite -- ngx_http_rewrite_module #}
+{%- macro rewrite(data, context) %}
+{%- if context == 'http' or
+       context == 'server' or
+       context == 'location' or
+       context == 'locationif' or
+       context == 'serverif' %}
+{%- if data.rewrite_log is defined %}
+rewrite_log {{ data.rewrite_log | ternary('on', 'off') }};
+{% endif %}
+{%- if data.uninitialized_variable_warn is defined %}
+uninitialized_variable_warn {{ data.uninitialized_variable_warn | ternary('on', 'off') }};
+{% endif %}
+{% endif %}
+
+{%- if context == 'server' or
+       context == 'location' or
+       context == 'locationif' or
+       context == 'serverif' %}
+{%- if data.return is defined %}
+return{{ ' ' + data.return.code | string if data.return.code is defined -}}
+      {{- ' ' + data.return.uri | string if data.rewrite_return.uri is defined -}}
+      {{- ' ' + data.rewrite_return.text | string if data.rewrite_return.text is defined }};
+{% endif %}
+{%- for rewrite in data.rewrite | default([]) %}
+rewrite {{ rewrite.regex }} {{ rewrite.replacement }}{{ ' ' + rewrite.flag | string if rewrite.flag is defined }};
+{% endfor %}
+{%- for set in data.set | default([]) %}
+set {{ set.variable }} {{ set.value }};
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{# NGINX HTTP Split Clients -- ngx_http_split_clients_module #}
+{%- macro split_clients(data) %}
+{%- for content in data.contents %}
+{{ content_line.percentage }} {{ content_line.value }};
+{% endfor %}
+{% endmacro %}
+
+{# NGINX HTTP Sub Filter -- ngx_http_sub_module #}
+{%- macro sub_filter(data) %}
+{%- for sub_filter in data.sub_filter | default([]) %}
+sub_filter {{ sub_filter.pattern }} {{ sub_filter.replacement }};
+{% endfor %}
+{%- if data.sub_filter_last_modified is defined %}
+sub_filter_last_modified {{ data.sub_filter_last_modified | ternary('on', 'off') }};
+{% endif %}
+{%- if data.sub_filter_once is defined %}
+sub_filter_once {{ data.sub_filter_once | ternary('on', 'off') }};
+{% endif %}
+{%- if data.sub_filter_types is defined %}
+sub_filter_types {{ data.sub_filter_types | join(' ') }};
+{% endif %}
+{% endmacro %}
