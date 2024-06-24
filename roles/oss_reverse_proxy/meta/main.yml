@@ -24,9 +24,5 @@ galaxy_info:
         - jammy
         - noble
 
-collections:
-  - community.crypto
-  - community.general
-
 dependencies:
   - role: trippsc2.nginx.oss

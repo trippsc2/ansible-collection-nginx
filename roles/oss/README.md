@@ -3,19 +3,22 @@
 # Ansible Role: trippsc2.nginx.oss
 Version: 1.0.0
 
-Installs and configures NGINX OSS
+This role installs and configures NGINX OSS
 
 ## Requirements
 
 | Platform | Versions |
 | -------- | -------- |
-| EL | <ul><li>8</li></ul> |
+| Debian | <ul><li>bullseye</li><li>bookworm</li></ul> |
+| EL | <ul><li>8</li><li>9</li></ul> |
+| Ubuntu | <ul><li>focal</li><li>jammy</li><li>noble</li></ul> |
 
 ## Dependencies
 
 | Collection |
 | ---------- |
 | ansible.posix |
+| community.general |
 
 ## Role Arguments
 |Option|Description|Type|Required|Choices|Default|
@@ -29,6 +32,10 @@ Installs and configures NGINX OSS
 | nginx_group | <p>The group as which to run NGINX.</p><p>If Debian-based, this will default to www-data.</p><p>If Red Hat-based, this will default to nginx.</p><p>If overridden, the group must exist.</p> | str | no |  | OS specific |
 | nginx_configure_firewalld | <p>Whether to configure firewalld.</p><p>If Ubuntu, this will default to false.</p><p>If Red Hat-based or Debian, this will default to true.</p> | bool | no |  | true |
 | nginx_configure_ufw | <p>Whether to configure ufw.</p><p>If Ubuntu, this will default to true.</p><p>If Red Hat-based or Debian, this will default to false.</p> | bool | no |  | true |
+| nginx_allow_firewalld_http | <p>Whether to allow HTTP traffic in firewalld.</p> | bool | no |  | true |
+| nginx_allow_firewalld_https | <p>Whether to allow HTTPS traffic in firewalld.</p> | bool | no |  | true |
+| nginx_firewall_tcp_ports | <p>The list of TCP ports to allow in the firewall.</p> | list of 'int' | no |  |  |
+| nginx_firewall_udp_ports | <p>The list of UDP ports to allow in the firewall.</p> | list of 'int' | no |  |  |
 | nginx_worker_cpu_affinity | <p>The CPU affinity configuration for worker processes.</p><p>https://nginx.org/en/docs/ngx_core_module.html#worker_cpu_affinity</p> | dict of 'nginx_worker_cpu_affinity' options | no |  |  |
 | nginx_worker_priority | <p>The scheduling priority for worker processes.</p><p>Must be between -20 and 20.</p><p>https://nginx.org/en/docs/ngx_core_module.html#worker_priority</p> | int | no |  |  |
 | nginx_worker_processes | <p>The worker processes configuration.</p><p>https://nginx.org/en/docs/ngx_core_module.html#worker_processes</p> | dict of 'nginx_worker_processes' options | no |  | {"auto": true} |

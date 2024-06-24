@@ -18,10 +18,6 @@ This role installs and configures NGINX OSS as a reverse proxy.
 | ---- |
 | trippsc2.nginx.oss |
 
-| Collection |
-| ---------- |
-| community.crypto |
-| community.general |
 
 ## Role Arguments
 |Option|Description|Type|Required|Choices|Default|
