@@ -3,7 +3,8 @@
   when:
     - ansible_os_family is not defined or
       ansible_distribution is not defined or
-      ansible_distribution_major_version is not defined
+      ansible_distribution_major_version is not defined or
+      ansible_distribution_release is not defined
   ansible.builtin.setup:
     gather_subset:
       - '!all'
@@ -11,6 +12,7 @@
       - os_family
       - distribution
       - distribution_major_version
+      - distribution_release
 
 - name: Validate RHEL major version
   when:
@@ -26,18 +28,18 @@
     - ansible_os_family != 'RedHat'
   ansible.builtin.assert:
     that:
-      - ansible_distribution in _nginx_non_rhel_supported_distribution_versions.keys()
+      - ansible_distribution in _nginx_non_rhel_supported_distribution_releases.keys()
     fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
     success_msg: "{{ ansible_distribution }} is supported. Checking version."
 
-- name: Validate non-RHEL distribution version
+- name: Validate non-RHEL distribution release
   when:
     - ansible_os_family != 'RedHat'
   ansible.builtin.assert:
     that:
-      - ansible_distribution_major_version in _nginx_non_rhel_supported_distribution_versions[ansible_distribution]
-    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
-    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is supported"
+      - ansible_distribution_release in _nginx_non_rhel_supported_distribution_releases[ansible_distribution]
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_release }} is not supported"
+    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_release }} is supported"
 
 - name: Import OS variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"

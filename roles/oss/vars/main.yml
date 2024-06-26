@@ -3,14 +3,14 @@ _nginx_rhel_supported_versions:
   - '8'
   - '9'
 
-_nginx_non_rhel_supported_distribution_versions:
+_nginx_non_rhel_supported_distribution_releases:
   Debian:
-    - '11'
-    - '12'
+    - bookworm
+    - bullseye
   Ubuntu:
-    - '20'
-    - '22'
-    - '24'
+    - focal
+    - jammy
+    - noble
 
 _nginx_appstream_allowed_versions:
   '8':
