@@ -12,12 +12,16 @@ platforms:
     box: jtarpley/${MOLECULE_BOX:-rocky8_cis}
     memory: 2048
     cpus: 2
+    groups:
+      - subjects
 provisioner:
   name: ansible
   inventory:
-    links:
-      hosts: ./hosts
-      host_vars: ./host_vars/
-      group_vars: ./group_vars/
+    group_vars:
+      subjects:
+        nginxproxy_ssl_stapling: false
+        nginxproxy_ssl_stapling_verify: false
+        nginxproxy_server_name: localhost
+        nginxproxy_proxy_address: http://127.0.0.1:8080
 verifier:
   name: ansible
