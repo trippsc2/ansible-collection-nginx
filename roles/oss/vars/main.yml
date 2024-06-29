@@ -1,16 +1,11 @@
 ---
-_nginx_rhel_supported_versions:
+_nginx_el_supported_versions:
   - '8'
   - '9'
 
-_nginx_non_rhel_supported_distribution_releases:
-  Debian:
-    - bookworm
-    - bullseye
-  Ubuntu:
-    - focal
-    - jammy
-    - noble
+_nginx_non_el_supported_distributions:
+  - Debian
+  - Ubuntu
 
 _nginx_appstream_allowed_versions:
   '8':

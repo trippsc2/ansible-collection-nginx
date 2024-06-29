@@ -27,7 +27,7 @@
         _cert_certificate_path: /etc/ssl/certs/nginx.crt
         _cert_private_key_path: /etc/ssl/private/nginx.key
     
-    - name: Set OS specific variables (RHEL-based)
+    - name: Set OS specific variables (EL)
       when:
         - ansible_os_family == 'RedHat'
       ansible.builtin.set_fact:

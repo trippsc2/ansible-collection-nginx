@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss
-Version: 1.0.0
+Version: 1.0.1
 
 This role installs and configures NGINX OSS
 
@@ -32,8 +32,8 @@ This role installs and configures NGINX OSS
 | nginx_group | <p>The group as which to run NGINX.</p><p>If Debian-based, this will default to www-data.</p><p>If Red Hat-based, this will default to nginx.</p><p>If overridden, the group must exist.</p> | str | no |  | OS specific |
 | nginx_configure_firewalld | <p>Whether to configure firewalld.</p><p>If Ubuntu, this will default to false.</p><p>If Red Hat-based or Debian, this will default to true.</p> | bool | no |  | true |
 | nginx_configure_ufw | <p>Whether to configure ufw.</p><p>If Ubuntu, this will default to true.</p><p>If Red Hat-based or Debian, this will default to false.</p> | bool | no |  | true |
-| nginx_allow_firewalld_http | <p>Whether to allow HTTP traffic in firewalld.</p> | bool | no |  | true |
-| nginx_allow_firewalld_https | <p>Whether to allow HTTPS traffic in firewalld.</p> | bool | no |  | true |
+| nginx_allow_http | <p>Whether to allow HTTP traffic in firewalld.</p> | bool | no |  | true |
+| nginx_allow_https | <p>Whether to allow HTTPS traffic in firewalld.</p> | bool | no |  | true |
 | nginx_firewall_tcp_ports | <p>The list of TCP ports to allow in the firewall.</p> | list of 'int' | no |  |  |
 | nginx_firewall_udp_ports | <p>The list of UDP ports to allow in the firewall.</p> | list of 'int' | no |  |  |
 | nginx_worker_cpu_affinity | <p>The CPU affinity configuration for worker processes.</p><p>https://nginx.org/en/docs/ngx_core_module.html#worker_cpu_affinity</p> | dict of 'nginx_worker_cpu_affinity' options | no |  |  |

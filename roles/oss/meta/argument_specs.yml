@@ -73,13 +73,13 @@ argument_specs:
           - Whether to configure ufw.
           - If Ubuntu, this will default to true.
           - If Red Hat-based or Debian, this will default to false.
-      nginx_allow_firewalld_http:
+      nginx_allow_http:
         type: bool
         required: false
         default: true
         description:
           - Whether to allow HTTP traffic in firewalld.
-      nginx_allow_firewalld_https:
+      nginx_allow_https:
         type: bool
         required: false
         default: true

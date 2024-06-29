@@ -14,32 +14,23 @@
       - distribution_major_version
       - distribution_release
 
-- name: Validate RHEL major version
+- name: Validate EL major version
   when:
     - ansible_os_family == 'RedHat'
   ansible.builtin.assert:
     that:
-      - ansible_distribution_major_version in _nginx_rhel_supported_versions
-    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
-    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is supported"
+      - ansible_distribution_major_version in _nginx_el_supported_versions
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported. Supported versions are '{{ _nginx_el_supported_versions | join(''', ''') }}'"
+    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is supported."
 
-- name: Validate non-RHEL distribution
+- name: Validate non-EL distribution
   when:
     - ansible_os_family != 'RedHat'
   ansible.builtin.assert:
     that:
-      - ansible_distribution in _nginx_non_rhel_supported_distribution_releases.keys()
-    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported"
-    success_msg: "{{ ansible_distribution }} is supported. Checking version."
-
-- name: Validate non-RHEL distribution release
-  when:
-    - ansible_os_family != 'RedHat'
-  ansible.builtin.assert:
-    that:
-      - ansible_distribution_release in _nginx_non_rhel_supported_distribution_releases[ansible_distribution]
-    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_release }} is not supported"
-    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_release }} is supported"
+      - ansible_distribution in _nginx_non_el_supported_distributions
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported. Supported non-EL distributions are '{{ _nginx_non_el_supported_distributions | join(''', ''') }}'"
+    success_msg: "{{ ansible_distribution }} is supported."
 
 - name: Import OS variables
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
@@ -62,14 +53,14 @@
     state: present
   register: _nginx_validate_user
 
-- name: Assert user
+- name: Assert
   when:
     - nginx_user != _nginx_default_user
   ansible.builtin.assert:
     that:
       - not _nginx_validate_user.changed
-    fail_msg: "User {{ nginx_user }} does not exist"
-    success_msg: "User {{ nginx_user }} exists"
+    fail_msg: "User '{{ nginx_user }}' does not exist"
+    success_msg: "User '{{ nginx_user }}' exists"
 
 - name: Validate group
   when:
@@ -80,11 +71,11 @@
     state: present
   register: _nginx_validate_group
 
-- name: Assert group
+- name: Assert
   when:
     - nginx_group != _nginx_default_group
   ansible.builtin.assert:
     that:
       - not _nginx_validate_group.changed
-    fail_msg: "Group {{ nginx_group }} does not exist"
-    success_msg: "Group {{ nginx_group }} exists"
+    fail_msg: "Group '{{ nginx_group }}' does not exist"
+    success_msg: "Group '{{ nginx_group }}' exists"
