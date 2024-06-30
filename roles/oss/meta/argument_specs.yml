@@ -12,15 +12,15 @@ argument_specs:
         default: '1.24'
         description:
           - The version of NGINX to install via AppStream.
-          - This only applies to Red Hat-based systems.
+          - This only applies to EL systems.
       nginx_configure_selinux:
         type: bool
         required: false
         default: OS specific
         description:
           - Whether to configure SELinux.
-          - If Debian-based, this will default to false.
-          - If Red Hat-based, this will default to true.
+          - For Debian-based systems, this will default to false.
+          - For EL systems, this will default to true.
       nginx_configure_logrotate:
         type: bool
         required: false
@@ -45,34 +45,34 @@ argument_specs:
         default: OS specific
         description:
           - The user as which to run NGINX.
-          - If Debian-based, this will default to www-data.
-          - If Red Hat-based, this will default to nginx.
-          - If overridden, the user must exist.
+          - For Debian-based systems, this will default to www-data.
+          - For EL systems, this will default to nginx.
+          - If overridden, the user must already exist.
       nginx_group:
         type: str
         required: false
         default: OS specific
         description:
           - The group as which to run NGINX.
-          - If Debian-based, this will default to www-data.
-          - If Red Hat-based, this will default to nginx.
-          - If overridden, the group must exist.
+          - For Debian-based systems, this will default to www-data.
+          - For EL systems, this will default to nginx.
+          - If overridden, the user must already exist.
       nginx_configure_firewalld:
         type: bool
         required: false
         default: OS specific
         description:
           - Whether to configure firewalld.
-          - If Ubuntu, this will default to false.
-          - If Red Hat-based or Debian, this will default to true.
+          - For EL or Debian systems, this will default to true.
+          - For Ubuntu systems, this will default to false.
       nginx_configure_ufw:
         type: bool
         required: false
         default: OS specific
         description:
           - Whether to configure ufw.
-          - If Ubuntu, this will default to true.
-          - If Red Hat-based or Debian, this will default to false.
+          - For Ubuntu systems, this will default to true.
+          - For EL or Debian systems, this will default to false.
       nginx_allow_http:
         type: bool
         required: false
