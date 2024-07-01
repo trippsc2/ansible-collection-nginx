@@ -6243,7 +6243,7 @@ argument_specs:
                     description:
                       - The status code to return.
                       - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return
-                  uri:
+                  url:
                     type: str
                     required: false
                     description:
@@ -8431,6 +8431,71 @@ argument_specs:
                     description:
                       - The status code to return for requests exceeding the rate limit.
                       - https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req_status
+                  access_log:
+                    type: dict
+                    required: false
+                    description:
+                      - The access log configuration.
+                      - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                    options:
+                      'off':
+                        type: bool
+                        required: false
+                        default: false
+                        description:
+                          - Whether to disable access logging.
+                          - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                      logs:
+                        type: list
+                        required: false
+                        elements: dict
+                        description:
+                          - The list of access log files.
+                          - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                        options:
+                          path:
+                            type: path
+                            required: true
+                            description:
+                              - The path to the access log file.
+                              - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                          format:
+                            type: str
+                            required: false
+                            description:
+                              - The log format.
+                              - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                          buffer:
+                            type: str
+                            required: false
+                            description:
+                              - The buffer size for the access log.
+                              - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                          gzip:
+                            type: dict
+                            required: false
+                            description:
+                              - The gzip configuration for the access log.
+                              - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                            options:
+                              level:
+                                type: int
+                                required: false
+                                description:
+                                  - The compression level.
+                                  - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                          flush:
+                            type: str
+                            required: false
+                            description:
+                              - The time period to flush the access log.
+                              - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+                          if:
+                            type: str
+                            required: false
+                            description:
+                              - The condition under which to log.
+                              - https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
                   open_log_file_cache:
                     type: dict
                     required: false
@@ -8567,7 +8632,7 @@ argument_specs:
                         description:
                           - The status code to return.
                           - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return
-                      uri:
+                      url:
                         type: str
                         required: false
                         description:
@@ -9177,7 +9242,7 @@ argument_specs:
                         description:
                           - The status code to return.
                           - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return
-                      uri:
+                      url:
                         type: str
                         required: false
                         description:

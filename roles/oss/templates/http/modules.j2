@@ -310,7 +310,7 @@ uninitialized_variable_warn {{ data.uninitialized_variable_warn | ternary('on', 
        context == 'serverif' %}
 {%- if data.return is defined %}
 return{{ ' ' + data.return.code | string if data.return.code is defined -}}
-      {{- ' ' + data.return.uri | string if data.rewrite_return.uri is defined -}}
+      {{- ' ' + data.return.url | string if data.rewrite_return.url is defined -}}
       {{- ' ' + data.rewrite_return.text | string if data.rewrite_return.text is defined }};
 {% endif %}
 {%- for rewrite in data.rewrite | default([]) %}

@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss
-Version: 1.0.2
+Version: 1.0.3
 
 This role installs and configures NGINX OSS
 
@@ -1437,7 +1437,7 @@ This role installs and configures NGINX OSS
 |Option|Description|Type|Required|Choices|Default|
 |---|---|---|---|---|---|
 | code | <p>The status code to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | int | no |  |  |
-| uri | <p>The URI to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
+| url | <p>The URI to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
 | text | <p>The text to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
 
 ### Options for nginx_http_config_files > server > rewrite
@@ -1654,6 +1654,7 @@ This role installs and configures NGINX OSS
 | limit_req_dry_run | <p>Whether to enable dry-run mode for rate limiting.</p><p>https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req_dry_run</p> | bool | no |  | false |
 | limit_req_log_level | <p>The log level for rate limiting.</p><p>https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req_log_level</p> | str | no | <ul><li>info</li><li>notice</li><li>warn</li><li>error</li></ul> |  |
 | limit_req_status | <p>The status code to return for requests exceeding the rate limit.</p><p>https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req_status</p> | int | no |  |  |
+| access_log | <p>The access log configuration.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | dict of 'access_log' options | no |  |  |
 | open_log_file_cache | <p>The open log file cache configuration.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#open_log_file_cache</p> | dict of 'open_log_file_cache' options | no |  |  |
 | error_log | <p>The error log configuration.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#error_log</p> | dict of 'error_log' options | no |  |  |
 | mirror | <p>The mirror configuration.</p><p>https://nginx.org/en/docs/http/ngx_http_mirror_module.html#mirror</p> | dict of 'mirror' options | no |  |  |
@@ -1936,6 +1937,27 @@ This role installs and configures NGINX OSS
 | nodelay | <p>Whether to delay requests exceeding the rate limit.</p><p>https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req</p> | bool | no |  | false |
 | delay | <p>The time period to delay requests exceeding the rate limit.</p><p>https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req</p> | str | no |  |  |
 
+### Options for nginx_http_config_files > server > location > access_log
+|Option|Description|Type|Required|Choices|Default|
+|---|---|---|---|---|---|
+| off | <p>Whether to disable access logging.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | bool | no |  | false |
+| logs | <p>The list of access log files.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | list of dicts of 'logs' options | no |  |  |
+
+### Options for nginx_http_config_files > server > location > access_log > logs
+|Option|Description|Type|Required|Choices|Default|
+|---|---|---|---|---|---|
+| path | <p>The path to the access log file.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | path | yes |  |  |
+| format | <p>The log format.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | str | no |  |  |
+| buffer | <p>The buffer size for the access log.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | str | no |  |  |
+| gzip | <p>The gzip configuration for the access log.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | dict of 'gzip' options | no |  |  |
+| flush | <p>The time period to flush the access log.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | str | no |  |  |
+| if | <p>The condition under which to log.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | str | no |  |  |
+
+### Options for nginx_http_config_files > server > location > access_log > logs > gzip
+|Option|Description|Type|Required|Choices|Default|
+|---|---|---|---|---|---|
+| level | <p>The compression level.</p><p>https://nginx.org/en/docs/http/ngx_http_log_module.html#access_log</p> | int | no |  |  |
+
 ### Options for nginx_http_config_files > server > location > open_log_file_cache
 |Option|Description|Type|Required|Choices|Default|
 |---|---|---|---|---|---|
@@ -1961,7 +1983,7 @@ This role installs and configures NGINX OSS
 |Option|Description|Type|Required|Choices|Default|
 |---|---|---|---|---|---|
 | code | <p>The status code to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | int | no |  |  |
-| uri | <p>The URI to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
+| url | <p>The URI to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
 | text | <p>The text to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
 
 ### Options for nginx_http_config_files > server > location > rewrite
@@ -2119,7 +2141,7 @@ This role installs and configures NGINX OSS
 |Option|Description|Type|Required|Choices|Default|
 |---|---|---|---|---|---|
 | code | <p>The status code to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | int | no |  |  |
-| uri | <p>The URI to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
+| url | <p>The URI to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
 | text | <p>The text to return.</p><p>https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return</p> | str | no |  |  |
 
 ### Options for nginx_http_config_files > server > if > rewrite
