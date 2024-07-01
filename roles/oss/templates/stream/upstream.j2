@@ -8,17 +8,17 @@ server {{ server.address -}}
        {{- ' fail_timeout=' + server.fail_timeout | string if server.fail_timeout is defined -}}
        {{- ' backup' if server.backup | default(false) -}}
        {{- ' down' if server.down | default(false) }};
-{%- endfor %}
+{% endfor %}
 {%- if data.zone is defined %}
 zone {{ data.zone.name }}{{ ' ' + data.zone.size | string if data.zone.size is defined }};
-{%- endif %}
+{% endif %}
 {%- if data.load_balancing_method == 'hash' and data.hash is defined %}
 hash {{ data.hash.key }}{{ ' consistent' if data.hash.consistent | default(false) }};
-{%- elif data.load_balancing_method == 'least_conn' %}
+{% elif data.load_balancing_method == 'least_conn' %}
 least_conn;
-{%- elif data.load_balancing_method == 'random' %}
+{% elif data.load_balancing_method == 'random' %}
 random{% if ((data.random | default({})).two | default({})).enabled | default(false) -%}
       {{- ' two ' + data.random.two.method if ((data.random | default({})).two | default({})).method is defined else ' two' -}}
       {%- endif %};
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endmacro %}

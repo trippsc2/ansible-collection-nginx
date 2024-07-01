@@ -16,11 +16,11 @@ upstream {{ upstream.name }} {
 {% endif %}
 {%- if upstream.load_balancing_method == 'hash' and upstream.hash is defined %}
     hash {{ upstream.hash.key }}{{ ' consistent' if upstream.hash.consistent | default(false) }};
-{%- elif upstream.load_balancing_method == 'ip_hash' %}
+{% elif upstream.load_balancing_method == 'ip_hash' %}
     ip_hash;
-{%- elif upstream.load_balancing_method == 'least_conn' %}
+{% elif upstream.load_balancing_method == 'least_conn' %}
     least_conn;
-{%- elif upstream.load_balancing_method == 'random' %}
+{% elif upstream.load_balancing_method == 'random' %}
     random{% if (upstream.random | default({})).two is defined -%}
           {{- ' two' -}}
           {{- ' ' + upstream.random.two.method if upstream.random.two.method is defined -}}

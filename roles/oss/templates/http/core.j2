@@ -32,9 +32,9 @@ absolute_redirect {{ data.absolute_redirect | ternary('on', 'off') }};
 {%- if data.aio is defined %}
 {%- if data.aio.on | default(false) %}
 aio on;
-{%- elif data.aio.off | default(false) %}
+{% elif data.aio.off | default(false) %}
 aio off;
-{%- else %}
+{% else %}
 aio threads={{ data.aio.threads }};
 {% endif %}
 {% endif %}
@@ -77,9 +77,9 @@ directio_alignment {{ data.directio_alignment }};
 {%- if data.disable_symlinks is defined %}
 {%- if data.disable_symlinks.off | default(false) %}
 disable_symlinks off;
-{%- elif data.disable_symlinks.if_not_owner | default(false) %}
+{% elif data.disable_symlinks.if_not_owner | default(false) %}
 disable_symlinks if_not_owner{{ ' from=' + data.disable_symlinks.from | string if data.disable_symlinks.from is defined }};
-{%- else %}
+{% else %}
 disable_symlinks on{{ ' from=' + data.disable_symlinks.from | string if data.disable_symlinks.from is defined }};
 {% endif %}
 {% endif %}
@@ -128,7 +128,7 @@ msie_refresh {{ data.msie_refresh | ternary('on', 'off') }};
 {%- if data.open_file_cache is defined %}
 {%- if data.open_file_cache.off | default(false) %}
 open_file_cache off;
-{%- else %}
+{% else %}
 open_file_cache max={{ data.open_file_cache.max -}}
                 {{- ' inactive=' + data.open_file_cache.inactive | string if data.open_file_cache.inactive is defined }};
 {% endif %}

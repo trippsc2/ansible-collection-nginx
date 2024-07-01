@@ -122,9 +122,9 @@ gzip_min_length {{ data.gzip_min_length }};
 {%- if data.gzip_proxied is defined %}
 {%- if data.gzip_proxied.off | default(false) %}
 gzip_proxied off;
-{%- elif data.gzip_proxied.any | default(false) %}
+{% elif data.gzip_proxied.any | default(false) %}
 gzip_proxied any;
-{%- else %}
+{% else %}
 gzip_proxied {{ data.gzip_proxied.values | join(' ') }};
 {% endif %}
 {% endif %}
@@ -151,11 +151,11 @@ add_trailer {{ trailer.field }} {{ trailer.value }}{{ ' always' if trailer.alway
 {%- if data.expires is defined %}
 {%- if data.expires.off | default(false) %}
 expires off;
-{%- elif data.expires.max | default(false) %}
+{% elif data.expires.max | default(false) %}
 expires max;
-{%- elif data.expires.epoch | default(false) %}
+{% elif data.expires.epoch | default(false) %}
 expires epoch;
-{%- else %}
+{% else %}
 expires {{ 'modified ' if data.expires.modified | default(false) }}{{ data.expires.time }};
 {% endif %}
 {% endif %}
@@ -199,7 +199,7 @@ limit_req_zone {{ zone.key }} zone={{ zone.name }}:{{ zone.size }} rate={{ zone.
 {%- if data.access_log is defined %}
 {%- if data.access_log.off | default(false) %}
 access_log off;
-{%- else %}
+{% else %}
 {%- for log in data.access_log.logs | default([]) %}
 access_log {{ log.path -}}
            {%- if log.format is defined -%}
@@ -223,7 +223,7 @@ access_log {{ log.path -}}
 {%- if data.open_log_file_cache is defined %}
 {%- if data.open_log_file_cache.off | default(false) %}
 open_log_file_cache off;
-{%- else %}
+{% else %}
 open_log_file_cache max={{ data.open_log_file_cache.max -}}
                     {{- ' inactive=' + data.open_log_file_cache.inactive | string if data.open_log_file_cache.inactive is defined -}}
                     {{- ' min_uses=' + data.open_log_file_cache.min_uses | string if data.open_log_file_cache.min_uses is defined -}}
@@ -273,7 +273,7 @@ volatile;
 {%- if data.mirror is defined %}
 {%- if data.mirror.off | default(false) %}
 mirror off;
-{%- else %}
+{% else %}
 {%- for uri in data.mirror.uris %}
 mirror {{ uri }};
 {% endfor %}
@@ -318,8 +318,8 @@ uninitialized_variable_warn {{ data.uninitialized_variable_warn | ternary('on', 
        context == 'serverif' %}
 {%- if data.return is defined %}
 return{{ ' ' + data.return.code | string if data.return.code is defined -}}
-      {{- ' ' + data.return.url | string if data.rewrite_return.url is defined -}}
-      {{- ' ' + data.rewrite_return.text | string if data.rewrite_return.text is defined }};
+      {{- ' ' + data.return.url | string if data.return.url is defined -}}
+      {{- ' ' + data.return.text | string if data.return.text is defined }};
 {% endif %}
 {%- for rewrite in data.rewrite | default([]) %}
 rewrite {{ rewrite.regex }} {{ rewrite.replacement }}{{ ' ' + rewrite.flag | string if rewrite.flag is defined }};

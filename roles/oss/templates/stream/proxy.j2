@@ -5,70 +5,70 @@
 {%- if data.proxy_bind is defined %}
 {%- if data.proxy_bind.off | default(false) %}
 proxy_bind off;
-{%- else %}
+{% else %}
 proxy_bind {{ data.proxy_bind.address }}{{ ' transparent' if data.proxy_bind.transparent | default(false) }};
-{%- endif %}
-{%- endif %}
+{% endif %}
+{% endif %}
 {%- if data.proxy_buffer_size is defined %}
 proxy_buffer_size {{ data.proxy_buffer_size }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_connect_timeout is defined %}
 proxy_connect_timeout {{ data.proxy_connect_timeout }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_download_rate is defined %}
 proxy_download_rate {{ data.proxy_download_rate }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_half_close is defined %}
 proxy_half_close {{ data.proxy_half_close | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_next_upstream is defined %}
 proxy_next_upstream {{ data.proxy_next_upstream | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_next_upstream_timeout is defined %}
 proxy_next_upstream_timeout {{ data.proxy_next_upstream_timeout }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_next_upstream_tries is defined %}
 proxy_next_upstream_tries {{ data.proxy_next_upstream_tries }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_protocol is defined %}
 proxy_protocol {{ data.proxy_protocol | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_requests is defined %}
 proxy_requests {{ data.proxy_requests }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_responses is defined %}
 proxy_responses {{ data.proxy_responses }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_session_drop is defined %}
 proxy_session_drop {{ data.proxy_session_drop | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_socket_keepalive is defined %}
 proxy_socket_keepalive {{ data.proxy_socket_keepalive | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl is defined %}
 proxy_ssl {{ data.proxy_ssl | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_certificate is defined %}
 proxy_ssl_certificate {{ data.proxy_ssl_certificate }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_certificate_key is defined %}
 proxy_ssl_certificate_key {{ data.proxy_ssl_certificate_key }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_ciphers is defined %}
 proxy_ssl_ciphers {{ data.proxy_ssl_ciphers if data.proxy_ssl_ciphers is string else data.proxy_ssl_ciphers | join(':') }};
-{%- endif %}
+{% endif %}
 {%- for command in data.proxy_ssl_conf_command | default([]) %}
 proxy_ssl_conf_command {{ command }};
-{%- endfor %}
+{% endfor %}
 {%- if data.proxy_ssl_crl is defined %}
 proxy_ssl_crl {{ data.proxy_ssl_crl }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_name is defined %}
 proxy_ssl_name {{ data.proxy_ssl_name }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_password_file is defined %}
 proxy_ssl_password_file {{ data.proxy_ssl_password_file }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_protocols is defined and
        (data.proxy_ssl_protocols.sslv2 | default(false) or
        data.proxy_ssl_protocols.sslv3 | default(false) or
@@ -82,33 +82,33 @@ proxy_ssl_protocols{{ ' SSLv2' if data.proxy_ssl_protocols.sslv2 | default(false
                    {{- ' TLSv1.1' if data.proxy_ssl_protocols.tlsv11 | default(false) -}}
                    {{- ' TLSv1.2' if data.proxy_ssl_protocols.tlsv12 | default(false) -}}
                    {{- ' TLSv1.3' if data.proxy_ssl_protocols.tlsv13 | default(false) }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_server_name is defined %}
 proxy_ssl_server_name {{ data.proxy_ssl_server_name | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_session_reuse is defined %}
 proxy_ssl_session_reuse {{ data.proxy_ssl_session_reuse | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_trusted_certificate is defined %}
 proxy_ssl_trusted_certificate {{ data.proxy_ssl_trusted_certificate }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_verify is defined %}
 proxy_ssl_verify {{ data.proxy_ssl_verify | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_ssl_verify_depth is defined %}
 proxy_ssl_verify_depth {{ data.proxy_ssl_verify_depth }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_timeout is defined %}
 proxy_timeout {{ data.proxy_timeout }};
-{%- endif %}
+{% endif %}
 {%- if data.proxy_upload_rate is defined %}
 proxy_upload_rate {{ data.proxy_upload_rate }};
-{%- endif %}
-{%- endif %}
+{% endif %}
+{% endif %}
 
 {%- if context == 'server' %}
 {%- if data.proxy_pass is defined %}
 proxy_pass {{ data.proxy_pass }};
-{%- endif %}
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endif %}
+{% endmacro %}

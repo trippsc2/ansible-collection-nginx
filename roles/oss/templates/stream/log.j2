@@ -4,11 +4,11 @@
        context == 'server' %}
 {%- for log in data.error_log | default([]) %}
 error_log {{ log.file }}{{ ' ' + log.level | string if log.level is defined }};
-{%- endfor %}
+{% endfor %}
 {%- if data.access_log is defined %}
 {%- if data.access_log.off | default(false) %}
 access_log off;
-{%- else %}
+{% else %}
 {%- for log in data.access_log.logs %}
 access_log {{ log.path -}}
            {%- if log.format is defined -%}
@@ -21,23 +21,23 @@ access_log {{ log.path -}}
            {{- ' flush=' + log.flush | string if log.flush is defined -}}
            {{- ' if=' + log.if | string if log.if is defined -}}
            {%- endif %};
-{%- endfor %}
-{%- endif %}
-{%- endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
 {%- if data.open_log_file_cache is defined %}
 {%- if data.open_log_file_cache.off | default(false) %}
 open_log_file_cache off;
-{%- else %}
+{% else %}
 open_log_file_cache max={{ data.log_open_log_file_cache.max -}}
                     {{- ' inactive=' + data.log_open_log_file_cache.inactive | string if data.log_open_log_file_cache.inactive is defined -}}
                     {{- ' min_uses=' + data.log_open_log_file_cache.min_uses | string if data.log_open_log_file_cache.min_uses is defined -}}
                     {{- ' valid=' + data.log_open_log_file_cache.valid | string if data.log_open_log_file_cache.valid is defined }};
-{%- endif %}
-{%- endif %}
+{% endif %}
+{% endif %}
 
 {%- if context == 'stream' %}
 {%- for format in data.log_format | default([]) %}
 log_format {{ format.name }}{{ ' escape=' + format.escape | string if format.escape is defined }} {{ format.format }};
-{%- endfor %}
-{%- endif %}
-{%- endmacro -%}
+{% endfor %}
+{% endif %}
+{% endmacro %}

@@ -2,60 +2,60 @@
 {%- macro auth_http(data) %}
 {%- if data.auth_http is defined %}
 auth_http {{ data.auth_http }};
-{%- endif %}
+{% endif %}
 {%- for header in data.auth_http_header | default([]) %}
 auth_http_header {{ header.header }} {{ header.value }};
-{%- endfor %}
+{% endfor %}
 {%- if data.auth_http_pass_client_cert is defined %}
 auth_http_pass_client_cert {{ data.auth_http_pass_client_cert | ternary('on', 'off') }};
-{%- endif %}
+{% endif %}
 {%- if data.auth_http_timeout is defined %}
 auth_http_timeout {{ data.auth_http_timeout }};
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endmacro %}
 
 {# NGINX Mail Real IP -- ngx_mail_realip #}
 {%- macro realip(data) %}
 {%- for real_ip_from in data.set_real_ip_from | default([]) %}
 set_real_ip_from {{ real_ip_from }};
-{%- endfor %}
-{%- endmacro -%}
+{% endfor %}
+{% endmacro %}
 
 {# NGINX Mail IMAP -- ngx_mail_imap #}
 {%- macro imap(data) %}
 {%- if data.imap_auth is defined %}
 imap_auth {{ data.imap_auth | join(' ') }};
-{%- endif %}
+{% endif %}
 {%- if data.imap_capabilities is defined %}
 imap_capabilities {{ data.imap_capabilities | join(' ') }};
-{%- endif %}
+{% endif %}
 {%- if data.imap_client_buffer is defined %}
 imap_client_buffer {{ data.imap_client_buffer }};
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endmacro %}
 
 {# NGINX Mail POP3 -- ngx_mail_pop3 #}
 {%- macro pop3(data) %}
 {%- if data.pop3_auth is defined %}
 pop3_auth {{ data.pop3_auth | join(' ') }};
-{%- endif %}
+{% endif %}
 {%- if data.pop3_capabilities is defined %}
 pop3_capabilities {{ data.pop3_capabilities | join(' ') }};
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endmacro %}
 
 {# NGINX Mail SMTP -- ngx_mail_smtp #}
 {%- macro smtp(data) %}
 {%- if data.smtp_auth is defined %}
 smtp_auth {{ data.smtp_auth | join(' ') }};
-{%- endif %}
+{% endif %}
 {%- if data.smtp_capabilities is defined %}
 smtp_capabilities {{ data.smtp_capabilities | join(' ') }};
-{%- endif %}
+{% endif %}
 {%- if data.smtp_client_buffer is defined %}
 smtp_client_buffer {{ data.smtp_client_buffer }};
-{%- endif %}
+{% endif %}
 {%- if data.smtp_greeting_delay is defined %}
 smtp_greeting_delay {{ data.smtp_greeting_delay }};
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endmacro %}

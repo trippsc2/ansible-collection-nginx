@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss_reverse_proxy
-Version: 1.0.5
+Version: 1.0.6
 
 This role installs and configures NGINX OSS as a reverse proxy.
 

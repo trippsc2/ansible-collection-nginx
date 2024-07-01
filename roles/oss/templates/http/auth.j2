@@ -37,7 +37,7 @@ auth_request_set {{ request.variable }} {{ request.value }};
 {%- if data.auth_jwt is defined %}
 {%- if data.auth_jwt.off | default(false) %}
 auth_jwt off;
-{%- else %}
+{% else %}
 auth_jwt {{ data.auth_jwt.realm -}}
          {{- ' token=' + data.auth_jwt_enable.token | string if data.auth_jwt_enable.token is defined }};
 {% endif %}

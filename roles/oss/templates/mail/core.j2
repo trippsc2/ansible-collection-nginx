@@ -4,33 +4,33 @@
        context == 'server' %}
 {%- for log in data.error_log | default([]) %}
 error_log {{ log.file }}{{ ' ' + log.level if log.level is defined }};
-{%- endfor %}
+{% endfor %}
 {%- if data.max_errors is defined %}
 max_errors {{ data.max_errors }};
-{%- endif %}
+{% endif %}
 {%- if data.resolver is defined %}
 {%- if data.resolver.off | default(false) %}
 resolver off;
-{%- else %}
+{% else %}
 {%- for resolver in data.resolver.resolvers | default([]) %}
 resolver {{ resolver.addresses | join(' ') -}}
          {{- ' valid=' + resolver.valid | string if resolver.valid is defined -}}
          {{- ' ipv4=' + resolver.ipv4 | ternary('on', 'off') if resolver.ipv4 is defined -}}
          {{- ' ipv6=' + resolver.ipv6 | ternary('on', 'off') if resolver.ipv6 is defined -}}
          {{- ' status_zone=' + resolver.status_zone | string if resolver.status_zone is defined }};
-{%- endfor %}
-{%- endif %}
-{%- endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
 {%- if data.resolver_timeout is defined %}
 resolver_timeout {{ data.resolver_timeout }};
-{%- endif %}
+{% endif %}
 {%- if data.server_name is defined %}
 server_name {{ data.server_name }};
-{%- endif %}
+{% endif %}
 {%- if data.timeout is defined %}
 timeout {{ data.timeout }};
-{%- endif %}
-{%- endif %}
+{% endif %}
+{% endif %}
 
 {%- if context == 'server' %}
 {%- for listen in data.listen | default([]) %}
@@ -56,9 +56,9 @@ listen {{ listen.address -}}
        {{- listen.so_keepalive.keepcnt if listen.so_keepalive.keepcnt is defined -}}
        {%- endif -%}
        {%- endif %};
-{%- endfor %}
+{% endfor %}
 {%- if data.protocol is defined %}
 protocol {{ data.protocol }};
-{%- endif %}
-{%- endif %}
-{%- endmacro -%}
+{% endif %}
+{% endif %}
+{% endmacro %}

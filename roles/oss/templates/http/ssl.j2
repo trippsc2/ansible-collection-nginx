@@ -36,7 +36,7 @@ ssl_ocsp {{ data.ssl_ocsp }};
 {%- if data.ssl_ocsp_cache is defined %}
 {%- if data.ssl_ocsp_cache.off | default(false) %}
 ssl_ocsp_cache off;
-{%- else %}
+{% else %}
 ssl_ocsp_cache {{- 'shared:' + data.ssl_ocsp_cache.shared.name | string + ':' + data.ssl_ocsp_cache.shared.size | string -}};
 {% endif %}
 {% endif %}
@@ -69,9 +69,9 @@ ssl_reject_handshake {{ data.ssl_reject_handshake | ternary('on', 'off') }};
 {%- if data.ssl_session_cache is defined %}
 {%- if data.ssl_session_cache.off | default(false) %}
 ssl_session_cache off;
-{%- elif data.ssl_session_cache.none | default(false) %}
+{% elif data.ssl_session_cache.none | default(false) %}
 ssl_session_cache none;
-{%- else %}
+{% else %}
 ssl_session_cache{%- if data.ssl_session_cache.builtin is defined -%}
                  {{- ' builtin:' + data.ssl_session_cache.builtin.size | string if data.ssl_session_cache.builtin.size is defined else ' builtin' -}}
                  {%- endif -%}
