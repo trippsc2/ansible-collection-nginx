@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss
-Version: 1.0.6
+Version: 1.0.7
 
 This role installs and configures NGINX OSS
 

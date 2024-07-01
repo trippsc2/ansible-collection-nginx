@@ -17,7 +17,7 @@ _nginxproxy_http_config_files:
           - path: /
             return:
               code: 301
-              uri: "https://{{ nginxproxy_redirect_return_server_name }}$request_uri"
+              url: "https://{{ nginxproxy_redirect_return_server_name }}$request_uri"
           - modifier: '='
             path: /basic_status
             stub_status: true

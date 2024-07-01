@@ -322,7 +322,8 @@ return{{ ' ' + data.return.code | string if data.return.code is defined -}}
       {{- ' ' + data.return.text | string if data.return.text is defined }};
 {% endif %}
 {%- for rewrite in data.rewrite | default([]) %}
-rewrite {{ rewrite.regex }} {{ rewrite.replacement }}{{ ' ' + rewrite.flag | string if rewrite.flag is defined }};
+rewrite {{ rewrite.regex }} {{ rewrite.replacement -}}
+        {{- ' ' + rewrite.flag | string if rewrite.flag is defined }};
 {% endfor %}
 {%- for set in data.set | default([]) %}
 set {{ set.variable }} {{ set.value }};
