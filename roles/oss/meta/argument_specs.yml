@@ -2657,6 +2657,19 @@ argument_specs:
             description:
               - Whether to display the file modification time in local time in directory listings.
               - https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_localtime
+          index:
+            type: list
+            required: false
+            elements: str
+            description:
+              - The list of files to use as the index.
+              - https://nginx.org/en/docs/http/ngx_http_index_module.html#index
+          random_index:
+            type: bool
+            required: false
+            description:
+              - Whether to select a random file from the index.
+              - https://nginx.org/en/docs/http/ngx_http_random_index_module.html#random_index
           gunzip:
             type: bool
             required: false
@@ -5755,6 +5768,19 @@ argument_specs:
                 description:
                   - Whether to display the file modification time in local time in directory listings.
                   - https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_localtime
+              index:
+                type: list
+                required: false
+                elements: str
+                description:
+                  - The list of files to use as the index.
+                  - https://nginx.org/en/docs/http/ngx_http_index_module.html#index
+              random_index:
+                type: bool
+                required: false
+                description:
+                  - Whether to select a random file from the index.
+                  - https://nginx.org/en/docs/http/ngx_http_random_index_module.html#random_index
               gunzip:
                 type: bool
                 required: false
@@ -8144,6 +8170,19 @@ argument_specs:
                     description:
                       - Whether to display the file modification time in local time in directory listings.
                       - https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_localtime
+                  index:
+                    type: list
+                    required: false
+                    elements: str
+                    description:
+                      - The list of files to use as the index.
+                      - https://nginx.org/en/docs/http/ngx_http_index_module.html#index
+                  random_index:
+                    type: bool
+                    required: false
+                    description:
+                      - Whether to select a random file from the index.
+                      - https://nginx.org/en/docs/http/ngx_http_random_index_module.html#random_index
                   gunzip:
                     type: bool
                     required: false

@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss
-Version: 1.0.3
+Version: 1.0.4
 
 This role installs and configures NGINX OSS
 
@@ -304,6 +304,8 @@ This role installs and configures NGINX OSS
 | autoindex_exact_size | <p>Whether to display the exact file size in directory listings.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_exact_size</p> | bool | no |  | false |
 | autoindex_format | <p>The format of the directory listing.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_format</p> | str | no | <ul><li>html</li><li>xml</li><li>json</li><li>jsonp</li></ul> |  |
 | autoindex_localtime | <p>Whether to display the file modification time in local time in directory listings.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_localtime</p> | bool | no |  | false |
+| index | <p>The list of files to use as the index.</p><p>https://nginx.org/en/docs/http/ngx_http_index_module.html#index</p> | list of 'str' | no |  |  |
+| random_index | <p>Whether to select a random file from the index.</p><p>https://nginx.org/en/docs/http/ngx_http_random_index_module.html#random_index</p> | bool | no |  | false |
 | gunzip | <p>Whether to enable response decompression.</p><p>https://nginx.org/en/docs/http/ngx_http_gunzip_module.html#gunzip</p> | bool | no |  | false |
 | gunzip_buffers | <p>The size and number of buffers for response decompression.</p><p>https://nginx.org/en/docs/http/ngx_http_gunzip_module.html#gunzip_buffers</p> | dict of 'gunzip_buffers' options | no |  |  |
 | gzip | <p>Whether to enable response compression.</p><p>https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip</p> | bool | no |  | false |
@@ -1014,6 +1016,8 @@ This role installs and configures NGINX OSS
 | autoindex_exact_size | <p>Whether to display the exact file size in directory listings.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_exact_size</p> | bool | no |  | false |
 | autoindex_format | <p>The format of the directory listing.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_format</p> | str | no | <ul><li>html</li><li>xml</li><li>json</li><li>jsonp</li></ul> |  |
 | autoindex_localtime | <p>Whether to display the file modification time in local time in directory listings.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_localtime</p> | bool | no |  | false |
+| index | <p>The list of files to use as the index.</p><p>https://nginx.org/en/docs/http/ngx_http_index_module.html#index</p> | list of 'str' | no |  |  |
+| random_index | <p>Whether to select a random file from the index.</p><p>https://nginx.org/en/docs/http/ngx_http_random_index_module.html#random_index</p> | bool | no |  | false |
 | gunzip | <p>Whether to enable response decompression.</p><p>https://nginx.org/en/docs/http/ngx_http_gunzip_module.html#gunzip</p> | bool | no |  | false |
 | gunzip_buffers | <p>The size and number of buffers for response decompression.</p><p>https://nginx.org/en/docs/http/ngx_http_gunzip_module.html#gunzip_buffers</p> | dict of 'gunzip_buffers' options | no |  |  |
 | gzip | <p>Whether to enable response compression.</p><p>https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip</p> | bool | no |  | false |
@@ -1636,6 +1640,8 @@ This role installs and configures NGINX OSS
 | autoindex_exact_size | <p>Whether to display the exact file size in directory listings.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_exact_size</p> | bool | no |  | false |
 | autoindex_format | <p>The format of the directory listing.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_format</p> | str | no | <ul><li>html</li><li>xml</li><li>json</li><li>jsonp</li></ul> |  |
 | autoindex_localtime | <p>Whether to display the file modification time in local time in directory listings.</p><p>https://nginx.org/en/docs/http/ngx_http_autoindex_module.html#autoindex_localtime</p> | bool | no |  | false |
+| index | <p>The list of files to use as the index.</p><p>https://nginx.org/en/docs/http/ngx_http_index_module.html#index</p> | list of 'str' | no |  |  |
+| random_index | <p>Whether to select a random file from the index.</p><p>https://nginx.org/en/docs/http/ngx_http_random_index_module.html#random_index</p> | bool | no |  | false |
 | gunzip | <p>Whether to enable response decompression.</p><p>https://nginx.org/en/docs/http/ngx_http_gunzip_module.html#gunzip</p> | bool | no |  | false |
 | gunzip_buffers | <p>The size and number of buffers for response decompression.</p><p>https://nginx.org/en/docs/http/ngx_http_gunzip_module.html#gunzip_buffers</p> | dict of 'gunzip_buffers' options | no |  |  |
 | gzip | <p>Whether to enable response compression.</p><p>https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip</p> | bool | no |  | false |

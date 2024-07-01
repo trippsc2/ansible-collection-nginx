@@ -9,7 +9,7 @@
 {%- from 'http/auth.j2' import auth_request with context -%}
 {%- from 'http/auth.j2' import auth_jwt with context -%}
 {%- from 'http/modules.j2' import stub_status with context -%}
-{%- from 'http/modules.j2' import autoindex with context -%}
+{%- from 'http/modules.j2' import index with context -%}
 {%- from 'http/modules.j2' import gunzip with context -%}
 {%- from 'http/modules.j2' import gzip with context -%}
 {%- from 'http/modules.j2' import headers with context -%}
@@ -45,7 +45,7 @@ server {
 {{- auth_request(data) }}
 {{- auth_jwt(data, 'server') }}
 {{- stub_status(data) }}
-{{- autoindex(data) }}
+{{- index(data) }}
 {{- gunzip(data) }}
 {{- gzip(data, 'server') }}
 {{- headers(data) }}
@@ -81,7 +81,7 @@ location {{ data.modifier + ' ' if data.modifier is defined }} {{ data.path }} {
 {{- auth_request(data) }}
 {{- auth_jwt(data, 'location') }}
 {{- stub_status(data) }}
-{{- autoindex(data) }}
+{{- index(data) }}
 {{- gunzip(data) }}
 {{- gzip(data, 'location') }}
 {{- headers(data) }}
@@ -188,7 +188,7 @@ split_clients {{ data.string }} {{ data.variable }} {
 {{- auth_basic(item) }}
 {{- auth_request(item) }}
 {{- auth_jwt(item, 'http') }}
-{{- autoindex(item) }}
+{{- index(item) }}
 {{- gunzip(item) }}
 {{- gzip(item, 'http') }}
 {{- headers(item) }}

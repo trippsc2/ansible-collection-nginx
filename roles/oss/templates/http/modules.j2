@@ -57,7 +57,9 @@ stub_status;
 {% endmacro %}
 
 {# NGINX HTTP Autoindex -- ngx_http_autoindex_module #}
-{%- macro autoindex(data) %}
+{# NGINX HTTP Index -- ngx_http_index_module #}
+{# NGINX HTTP Random Index -- ngx_http_random_index_module #}
+{%- macro index(data) %}
 {%- if data.autoindex is defined %}
 autoindex {{ data.autoindex | ternary('on', 'off') }};
 {% endif %}
@@ -69,6 +71,12 @@ autoindex_format {{ data.autoindex_format }};
 {% endif %}
 {%- if data.autoindex_localtime is defined %}
 autoindex_localtime {{ data.autoindex_localtime | ternary('on', 'off') }};
+{% endif %}
+{%- if data.index is defined %}
+index {{ data.index | join(' ') }};
+{% endif %}
+{%- if data.random_index is defined %}
+random_index {{ data.random_index | ternary('on', 'off') }};
 {% endif %}
 {% endmacro %}
 
