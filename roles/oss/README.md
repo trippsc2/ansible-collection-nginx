@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss
-Version: 1.0.4
+Version: 1.0.5
 
 This role installs and configures NGINX OSS
 
@@ -53,7 +53,7 @@ This role installs and configures NGINX OSS
 | nginx_events_multi_accept | <p>Whether to accept multiple connections with one system call.</p><p>https://nginx.org/en/docs/ngx_core_module.html#multi_accept</p> | bool | no |  | false |
 | nginx_events_worker_aio_requests | <p>The maximum number of asynchronous I/O operations for a single worker process.</p><p>https://nginx.org/en/docs/ngx_core_module.html#worker_aio_requests</p> | int | no |  |  |
 | nginx_events_worker_connections | <p>The maximum number of connections for a single worker process.</p><p>https://nginx.org/en/docs/ngx_core_module.html#worker_connections</p> | int | no |  | 1024 |
-| nginx_http_config_files | <p>The list of HTTP configuration files.</p> | list of dicts of 'nginx_http_config_files' options | no |  | [{"destination": "/etc/nginx/conf.d/default.conf", "client_body_timeout": 10, "client_header_timeout": 10, "keepalive_timeout": 10, "send_timeout": 10, "large_client_header_buffers": {"count": 2, "size": "1k"}, "log_format": [{"name": "main", "format": "'server=\"$server_name\" host=\"$host\u201d dest_port=\"$server_port\"' 'src=\"$remote_addr\" ip=\"$realip_remote_addr\" user=\"$remote_user\" ' 'time_local=\"$time_local\" http_status=\"$status\" ' 'http_referer=\"$http_referer\" http_user_agent=\"$http_user_agent\" ' 'http_x_forwarded_for=\"$http_x_forwarded_for\" ' 'http_x_header=\"$http_x_header\" uri_query=\"$query_string\" uri_path=\"$uri\" ' 'request=$request http_method=\"$request_method\"'\n"}], "server": [{"listen": {"port": 80}, "server_name": "_", "error_page": {"codes": [500, 502, 503, 504], "uri": "/50x.html"}, "access_log": {"logs": [{"path": "/var/log/nginx/access.log", "format": "main"}]}, "location": [{"path": "/", "root": "/usr/share/nginx/html"}]}]}] |
+| nginx_http_config_files | <p>The list of HTTP configuration files.</p> | list of dicts of 'nginx_http_config_files' options | no |  | [{"destination": "/etc/nginx/conf.d/default.conf", "client_body_timeout": 10, "client_header_timeout": 10, "keepalive_timeout": 10, "send_timeout": 10, "large_client_header_buffers": {"count": 2, "size": "1k"}, "log_format": [{"name": "main", "format": "'server=\"$server_name\" host=\"$host\u201d dest_port=\"$server_port\"' 'src=\"$remote_addr\" ip=\"$realip_remote_addr\" user=\"$remote_user\" ' 'time_local=\"$time_local\" http_status=\"$status\" ' 'http_referer=\"$http_referer\" http_user_agent=\"$http_user_agent\" ' 'http_x_forwarded_for=\"$http_x_forwarded_for\" ' 'http_x_header=\"$http_x_header\" uri_query=\"$query_string\" uri_path=\"$uri\" ' 'request=$request http_method=\"$request_method\"'\n"}], "server": [{"listen": {"port": 80}, "server_name": ["_"], "error_page": {"codes": [500, 502, 503, 504], "uri": "/50x.html"}, "access_log": {"logs": [{"path": "/var/log/nginx/access.log", "format": "main"}]}, "location": [{"path": "/", "root": "/usr/share/nginx/html"}]}]}] |
 | nginx_mail_config_files | <p>The list of mail configuration files.</p> | list of dicts of 'nginx_mail_config_files' options | no |  |  |
 | nginx_stream_config_files | <p>The list of stream configuration files.</p> | list of dicts of 'nginx_stream_config_files' options | no |  |  |
 
@@ -2198,7 +2198,7 @@ This role installs and configures NGINX OSS
 | max_errors | <p>The maximum number of errors to log.</p><p>https://nginx.org/en/docs/mail/ngx_mail_core_module.html#max_errors</p> | int | no |  |  |
 | resolver | <p>The resolver configuration.</p><p>https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver</p> | dict of 'resolver' options | no |  |  |
 | resolver_timeout | <p>The time period to wait for a resolver response.</p><p>https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver_timeout</p> | str | no |  |  |
-| server_name | <p>The server name.</p><p>https://nginx.org/en/docs/mail/ngx_mail_core_module.html#server_name</p> | str | no |  |  |
+| server_name | <p>The server name.</p><p>https://nginx.org/en/docs/mail/ngx_mail_core_module.html#server_name</p> | list of 'str' | no |  |  |
 | timeout | <p>The time period to wait for a client response.</p><p>https://nginx.org/en/docs/mail/ngx_mail_core_module.html#timeout</p> | str | no |  |  |
 | auth_http | <p>The URI to request authentication.</p><p>https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http</p> | str | no |  |  |
 | auth_http_header | <p>The list of headers to include in the authentication request.</p><p>https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header</p> | list of dicts of 'auth_http_header' options | no |  |  |
