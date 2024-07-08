@@ -10,14 +10,14 @@
         state: present
       register: _dnf_package
 
-    - name: Assert
+    - name: Verify NGINX is installed
       ansible.builtin.assert:
         that:
           - not _dnf_package.changed
-        fail_msg: NGINX not installed
-        success_msg: NGINX installed
+        fail_msg: NGINX is not installed.
+        success_msg: NGINX is installed.
 
-    - name: Check if NGINX is enabled
+    - name: Check if NGINX service is enabled
       become: true
       check_mode: true
       ansible.builtin.systemd_service:
@@ -25,14 +25,14 @@
         enabled: true
       register: _service_enabled
 
-    - name: Assert
+    - name: Verify NGINX service is enabled
       ansible.builtin.assert:
         that:
           - not _service_enabled.changed
-        fail_msg: NGINX not enabled
-        success_msg: NGINX enabled
+        fail_msg: NGINX service is not enabled.
+        success_msg: NGINX service is enabled.
 
-    - name: Check if NGINX is running
+    - name: Check if NGINX service is running
       become: true
       check_mode: true
       ansible.builtin.systemd_service:
@@ -40,9 +40,21 @@
         state: started
       register: _service_running
 
-    - name: Assert
+    - name: Verify NGINX service is running
       ansible.builtin.assert:
         that:
           - not _service_running.changed
-        fail_msg: NGINX not running
-        success_msg: NGINX running
+        fail_msg: NGINX service is not running.
+        success_msg: NGINX service is running.
+
+    - name: Check ss output
+      ansible.builtin.command: ss -tuln
+      changed_when: false
+      register: _ss_output
+
+    - name: Verify that NGINX is listening on port 80
+      ansible.builtin.assert:
+        that:
+          - '"0.0.0.0:80" in _ss_output.stdout'
+        fail_msg: NGINX not listening on port 80.
+        success_msg: NGINX listening on port 80.
