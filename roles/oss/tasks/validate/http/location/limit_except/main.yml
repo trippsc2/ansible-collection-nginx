@@ -1,0 +1,12 @@
+---
+- name: Validate ngx_http_access_module variables in limit_except block
+  ansible.builtin.include_tasks: validate/http/location/limit_except/access.yml
+
+- name: Validate ngx_http_auth_basic_module variables in limit_except block
+  ansible.builtin.include_tasks: validate/http/location/limit_except/auth_basic.yml
+
+- name: Validate ngx_http_auth_jwt_module variables in limit_except block
+  ansible.builtin.include_tasks: validate/http/location/limit_except/auth_jwt.yml
+
+- name: Validate ngx_http_log_module variables in limit_except block
+  ansible.builtin.include_tasks: validate/http/location/limit_except/log.yml

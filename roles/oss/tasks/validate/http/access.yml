@@ -1,0 +1,18 @@
+---
+- name: Validate allow directive in HTTP config file
+  loop: "{{ _nginx_http_config_file.allow | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item == 'all' or
+        item | ansible.utils.ipaddr != false
+    fail_msg: "Directive 'allow' in '{{ _nginx_http_config_file.destination }}' is not 'all' or a valid IP address or CIDR network. Value: {{ item }}"
+    success_msg: "Directive 'allow' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"
+
+- name: Validate deny directive in HTTP config file
+  loop: "{{ _nginx_http_config_file.deny | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item == 'all' or
+        item | ansible.utils.ipaddr != false
+    fail_msg: "Directive 'deny' in '{{ _nginx_http_config_file.destination }}' is not 'all' or a valid IP address or CIDR network. Value: {{ item }}"
+    success_msg: "Directive 'deny' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"

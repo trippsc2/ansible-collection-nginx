@@ -14,3 +14,21 @@
     name: "{{ item }}"
     state: true
     persistent: true
+
+- name: Ensure TCP ports are classified as http_port_t
+  become: true
+  community.general.seport:
+    ports: "{{ nginx_tcp_ports }}"
+    proto: tcp
+    setype: http_port_t
+    state: present
+    reload: true
+
+- name: Ensure UDP ports are classified as http_port_t
+  become: true
+  community.general.seport:
+    ports: "{{ nginx_udp_ports }}"
+    proto: udp
+    setype: http_port_t
+    state: present
+    reload: true

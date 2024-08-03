@@ -1,0 +1,24 @@
+---
+- name: Validate time in expires in location if block is defined
+  when:
+    - _nginx_if_block.expires is defined
+    - not _nginx_if_block.expires.off | default(false)
+    - not _nginx_if_block.expires.max | default(false)
+    - not _nginx_if_block.expires.epoch | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_if_block.expires.time is defined
+    fail_msg: "Directive 'time' in 'expires' in location if block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'time' in 'expires' in location if block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate time in expires in location if block
+  when:
+    - _nginx_if_block.expires is defined
+    - not _nginx_if_block.expires.off | default(false)
+    - not _nginx_if_block.expires.max | default(false)
+    - not _nginx_if_block.expires.epoch | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_if_block.expires.time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'time' in 'expires' in location if block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_if_block.expires.time }}"
+    success_msg: "Directive 'time' in 'expires' in location if block in '{{ _nginx_http_config_file.destination }}' is valid. {{ _nginx_if_block.expires.time }}"

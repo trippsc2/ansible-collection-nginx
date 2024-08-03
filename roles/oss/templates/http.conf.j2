@@ -22,15 +22,6 @@
 {%- from 'http/modules.j2' import split_clients with context -%}
 {%- from 'http/modules.j2' import sub_filter with context -%}
 
-{%- macro upstream_block(data) %}
-
-upstream {{ data.name }} {
-{% filter indent(width=4) %}
-    {{ upstream(data) }}
-{% endfilter %}
-}
-{% endmacro %}
-
 {%- macro server_block(data) %}
 
 server {
@@ -64,13 +55,25 @@ server {
 {%- for server_if in data.if | default([]) %}
 {{- server_if_block(server_if) }}
 {% endfor %}
+{%- if data.types | default([]) | length > 0 %}
+{{- types_block(data) }}
+{% endif %}
+{% endfilter %}
+}
+{% endmacro %}
+
+{%- macro upstream_block(data) %}
+
+upstream {{ data.name }} {
+{% filter indent(width=4) %}
+    {{ upstream(data) }}
 {% endfilter %}
 }
 {% endmacro %}
 
 {%- macro location_block(data) %}
 
-location {{ data.modifier + ' ' if data.modifier is defined }} {{ data.path }} {
+location {{ data.modifier + ' ' if data.modifier is defined }}{{ data.path }} {
 {% filter indent(width=4) %}
     {{ core(data, 'location') }}
 {{- http2(data, 'location') }}
@@ -103,6 +106,9 @@ location {{ data.modifier + ' ' if data.modifier is defined }} {{ data.path }} {
 {%- for limit_except in data.limit_except | default([]) %}
 {{- limit_except_block(limit_except) }}
 {% endfor %}
+{%- if data.types | default([]) | length > 0 %}
+{{- types_block(data) }}
+{% endif %}
 {% endfilter %}
 }
 {% endmacro %}
@@ -177,6 +183,15 @@ split_clients {{ data.string }} {{ data.variable }} {
 }
 {% endmacro %}
 
+{%- macro types_block(data) %}
+
+types {
+{% filter indent(width=4) %}
+    {{ core(data, 'types') }}
+{% endfilter %}
+}
+{% endmacro %}
+
 {{- ansible_managed | comment }}
 
 {{ core(item, 'http') }}
@@ -202,15 +217,18 @@ split_clients {{ data.string }} {{ data.variable }} {
 {%- for directive in item.custom_directives | default([]) %}
 {{- directive }}
 {% endfor %}
-{%- for upstream in item.upstream | default([]) %}
-{{- upstream_block(upstream) }}
+{%- for map in item.map | default([]) %}
+{{- map_block(map) }}
 {% endfor %}
 {%- for server in item.server | default([]) %}
 {{- server_block(server) }}
 {% endfor %}
-{%- for map in item.map | default([]) %}
-{{- map_block(map) }}
-{% endfor %}
 {%- for split_clients in item.split_clients | default([]) %}
 {{- split_clients_block(split_clients) }}
+{% endfor %}
+{%- if item.types | default([]) | length > 0 %}
+{{- types_block(item) }}
+{% endif %}
+{%- for upstream in item.upstream | default([]) %}
+{{- upstream_block(upstream) }}
 {% endfor %}

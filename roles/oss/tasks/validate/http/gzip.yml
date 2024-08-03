@@ -1,0 +1,48 @@
+---
+- name: Validate number in gzip_buffers in HTTP config file
+  when:
+    - _nginx_http_config_file.gzip_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.gzip_buffers.number | int > 0
+    fail_msg: "Directive 'number' in 'gzip_buffers' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.gzip_buffers.number }}"
+    success_msg: "Directive 'number' in 'gzip_buffers' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.gzip_buffers.number }}"
+
+- name: Validate size in gzip_buffers in HTTP config file
+  when:
+    - _nginx_http_config_file.gzip_buffers_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.gzip_buffers_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'gzip_buffers' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.gzip_buffers.size }}"
+    success_msg: "Directive 'size' in 'gzip_buffers' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.gzip_buffers.size }}"
+
+- name: Validate gzip_comp_level in HTTP config file
+  when:
+    - _nginx_http_config_file.gzip_comp_level is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.gzip_comp_level | int >= 1
+      - _nginx_http_config_file.gzip_comp_level | int <= 9
+    fail_msg: "Directive 'gzip_comp_level' in '{{ _nginx_http_config_file.destination }}' is not between 1 and 9. Value: {{ _nginx_http_config_file.gzip_comp_level }}"
+    success_msg: "Directive 'gzip_comp_level' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.gzip_comp_level }}"
+
+- name: Validate gzip_min_length in HTTP config file
+  when:
+    - _nginx_http_config_file.gzip_min_length is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.gzip_min_length | int >= 0
+    fail_msg: "Directive 'gzip_min_length' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.gzip_min_length }}"
+    success_msg: "Directive 'gzip_min_length' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.gzip_min_length }}"
+
+- name: Validate conditions in gzip_proxied in HTTP config file is defined and not empty
+  when:
+    - _nginx_http_config_file.gzip_proxied is defined
+    - not _nginx_http_config_file.gzip_proxied.off | default(false)
+    - not _nginx_http_config_file.gzip_proxied.any | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.gzip_proxied.conditions | default([]) | length > 0
+    fail_msg: "Directive 'conditions' in 'gzip_proxied' in '{{ _nginx_http_config_file.destination }}' is not defined or is an empty list."
+    success_msg: "Directive 'conditions' in 'gzip_proxied' in '{{ _nginx_http_config_file.destination }}' is defined as a list with elements."

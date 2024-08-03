@@ -1,0 +1,10 @@
+---
+- name: Validate auth_request in location block
+  when:
+    - _nginx_location_block.auth_request is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.auth_request == 'off' or
+        _nginx_location_block.auth_request is uri
+    fail_msg: "Directive 'auth_request' in location block in '{{ _nginx_http_config_file.destination }}' is not 'off' or a valid URI. Value: {{ _nginx_location_block.auth_request }}"
+    success_msg: "Directive 'auth_request' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.auth_request }}"

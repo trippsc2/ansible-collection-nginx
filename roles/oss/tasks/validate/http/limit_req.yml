@@ -1,0 +1,28 @@
+---
+- name: Validate burst in limit_req in HTTP config file
+  loop: "{{ _nginx_http_config_file.limit_req | default([]) }}"
+  when:
+    - item.burst is defined
+  ansible.builtin.assert:
+    that:
+      - item.burst | int > 0
+    fail_msg: "Directive 'burst' in 'limit_req' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.burst }}"
+    success_msg: "Directive 'burst' in 'limit_req' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.burst }}"
+
+- name: Validate delay in limit_req in HTTP config file
+  loop: "{{ _nginx_http_config_file.limit_req | default([]) }}"
+  when:
+    - item.delay is defined
+  ansible.builtin.assert:
+    that:
+      - item.delay | int > 0
+    fail_msg: "Directive 'delay' in 'limit_req' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.delay }}"
+    success_msg: "Directive 'delay' in 'limit_req' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.delay }}"
+
+- name: Validate size in limit_req_zone in HTTP config file
+  loop: "{{ _nginx_http_config_file.limit_req_zone | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'limit_req_zone' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ item.size }}"
+    success_msg: "Directive 'size' in 'limit_req_zone' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.size }}"

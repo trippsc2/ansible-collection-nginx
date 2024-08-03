@@ -41,50 +41,8 @@
     owner: root
     group: root
     mode: '0640'
-  notify:
-    - _nginx_restart_nginx
-
-- name: Ensure NGINX mail config file directories exist
-  loop: "{{ nginx_mail_config_files | map(attribute='destination') }}"
-  become: true
-  ansible.builtin.file:
-    path: "{{ item | dirname }}"
-    state: directory
-    owner: root
-    group: root
-    mode: '0750'
-
-- name: Ensure all NGINX mail config files exist as expected
-  loop: "{{ nginx_mail_config_files }}"
-  become: true
-  ansible.builtin.template:
-    src: stream/default.conf.j2
-    dest: "{{ item.destination }}"
-    owner: root
-    group: root
-    mode: '0640'
-  notify:
-    - _nginx_restart_nginx
-
-- name: Ensure NGINX stream config file directories exist
-  loop: "{{ nginx_stream_config_files | map(attribute='destination') }}"
-  become: true
-  ansible.builtin.file:
-    path: "{{ item | dirname }}"
-    state: directory
-    owner: root
-    group: root
-    mode: '0750'
-
-- name: Ensure all NGINX stream config files exist as expected
-  loop: "{{ nginx_stream_config_files }}"
-  become: true
-  ansible.builtin.template:
-    src: stream.conf.j2
-    dest: "{{ item.destination }}"
-    owner: root
-    group: root
-    mode: '0640'
+  loop_control:
+    label: "{{ item.destination }}"
   notify:
     - _nginx_restart_nginx
 
@@ -100,9 +58,7 @@
 - name: Set expected config files variable
   ansible.builtin.set_fact:
     _nginx_expected_config_files: >-
-      {{ nginx_http_config_files | map(attribute='destination') | list +
-         nginx_mail_config_files | map(attribute='destination') | list +
-         nginx_stream_config_files | map(attribute='destination') | list }}
+      {{ nginx_http_config_files | map(attribute='destination') | list }}
 
 - name: Find NGINX config files
   become: true

@@ -19,9 +19,17 @@ provisioner:
   inventory:
     group_vars:
       subjects:
+        ssl_certificate_directory: >-
+          {{ '/etc/pki/tls/certs' if ansible_os_family == 'RedHat' else '/etc/ssl/certs' }}
+        ssl_certificate_key_directory: >-
+          {{ '/etc/pki/tls/private' if ansible_os_family == 'RedHat' else '/etc/ssl/private' }}
         nginxproxy_ssl_stapling: false
         nginxproxy_ssl_stapling_verify: false
         nginxproxy_server_name: localhost
         nginxproxy_proxy_address: http://127.0.0.1:8080
+        nginxproxy_server_certificate_path: "{{ ssl_certificate_directory }}/nginx.crt"
+        nginxproxy_server_certificate_key_path: "{{ ssl_certificate_key_directory }}/nginx.key"
+  playbooks:
+    verify: ../common/verify/main.yml
 verifier:
   name: ansible

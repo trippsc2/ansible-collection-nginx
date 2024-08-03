@@ -7,9 +7,3 @@ nginxproxy_max_body_size: 100K
 
 nginxproxy_ssl_stapling: true
 nginxproxy_ssl_stapling_verify: true
-
-nginxproxy_server_certificate_path: >-
-  {{ _nginx_default_ssl_certificate_directory | default('/etc/pki/tls/certs') }}/nginx.crt
-
-nginxproxy_server_certificate_key_path: >-
-  {{ _nginx_default_ssl_certificate_key_directory | default('/etc/pki/tls/certs') }}/nginx.key

@@ -1,0 +1,172 @@
+---
+- name: Gathering Facts
+  when:
+    - ansible_distribution is not defined or
+      ansible_distribution_major_version is not defined or
+      ansible_distribution_release is not defined or
+      ansible_os_family is not defined
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - distribution
+      - distribution_major_version
+      - distribution_release
+      - os_family
+
+- name: Validate EL major version
+  when:
+    - ansible_os_family == 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_major_version in _nginx_el_supported_versions
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported. Supported versions are: {{ _nginx_el_supported_versions | join(', ') }}"
+    success_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is supported."
+
+- name: Validate non-EL distribution
+  when:
+    - ansible_os_family != 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution in _nginx_non_el_supported_distributions
+    fail_msg: "{{ ansible_distribution }} {{ ansible_distribution_major_version }} is not supported. Supported non-EL distributions are: {{ _nginx_non_el_supported_distributions | join(', ') }}"
+    success_msg: "{{ ansible_distribution }} is supported."
+
+- name: Import OS family variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}/main.yml"
+
+- name: Import non-EL distribution variables
+  when:
+    - ansible_os_family != 'RedHat'
+  ansible.builtin.include_vars: "{{ ansible_os_family }}/{{ ansible_distribution }}.yml"
+
+- name: Import EL major version variables
+  when:
+    - ansible_os_family == 'RedHat'
+  ansible.builtin.include_vars: "{{ ansible_os_family }}/{{ ansible_distribution_major_version }}.yml"
+
+- name: Validate AppStream version
+  when:
+    - ansible_os_family == 'RedHat'
+  ansible.builtin.assert:
+    that:
+      - nginx_appstream_version in _nginx_appstream_allowed_versions
+    fail_msg: "NGINX {{ nginx_appstream_version }} is not supported on {{ ansible_distribution }} {{ ansible_distribution_major_version }}."
+    success_msg: "NGINX {{ nginx_appstream_version }} is supported on {{ ansible_distribution }} {{ ansible_distribution_major_version }}."
+
+- name: Get OS users
+  when:
+    - nginx_user is defined
+    - nginx_user != _nginx_default_user
+  ansible.builtin.getent:
+    database: passwd
+    split: ':'
+
+- name: Get OS groups
+  when:
+    - nginx_group is defined
+    - nginx_group != _nginx_default_group
+  ansible.builtin.getent:
+    database: group
+    split: ':'
+
+- name: Validate user
+  when:
+    - nginx_user is defined
+    - nginx_user != _nginx_default_user
+  ansible.builtin.assert:
+    that:
+      - nginx_user in getent_passwd.keys()
+    fail_msg: "User '{{ nginx_user }}' does not exist."
+    success_msg: "User '{{ nginx_user }}' exists."
+
+- name: Validate group
+  when:
+    - nginx_group is defined
+    - nginx_group != _nginx_default_group
+  ansible.builtin.assert:
+    that:
+      - nginx_group in getent_group.keys()
+    fail_msg: "Group '{{ nginx_group }}' does not exist."
+    success_msg: "Group '{{ nginx_group }}' exists."
+
+- name: Validate logrotate mode is valid file mode
+  when:
+    - nginx_configure_logrotate
+  ansible.builtin.assert:
+    that:
+      - nginx_logrotate_mode | regex_search('^0[0-7]{3}$')
+    fail_msg: "Logrotate mode '{{ nginx_logrotate_mode }}' is not a valid file mode."
+    success_msg: "Logrotate mode '{{ nginx_logrotate_mode }}' is a valid file mode."
+
+- name: Validate worker_cpu_affinity has either is either auto or has a CPU mask defined
+  when:
+    - nginx_worker_cpu_affinity is defined
+  ansible.builtin.assert:
+    that:
+      - nginx_worker_cpu_affinity.auto | default(false) or
+        nginx_worker_cpu_affinity.mask is defined
+    fail_msg: "nginx_worker_cpu_affinity is not valid. 'auto' must be enabled, 'mask' must be defined, or both."
+    success_msg: nginx_worker_cpu_affinity is auto or has a CPU mask defined.
+
+- name: Validate worker_cpu_affinity mask is a valid CPU mask
+  when:
+    - nginx_worker_cpu_affinity is defined
+    - nginx_worker_cpu_affinity.mask is defined
+  ansible.builtin.assert:
+    that:
+      - nginx_worker_cpu_affinity.mask | regex_search('^[0-1]+$')
+    fail_msg: "nginx_worker_cpu_affinity mask '{{ nginx_worker_cpu_affinity.mask }}' is not a valid CPU mask."
+    success_msg: "nginx_worker_cpu_affinity mask '{{ nginx_worker_cpu_affinity.mask }}' is a valid CPU mask."
+
+- name: Validate nginx_worker_priority is between -20 and 20
+  when:
+    - nginx_worker_priority is defined
+  ansible.builtin.assert:
+    that:
+      - nginx_worker_priority | int >= -20
+      - nginx_worker_priority | int <= 20
+    fail_msg: "nginx_worker_priority '{{ nginx_worker_priority }}' is not between -20 and 20."
+    success_msg: "nginx_worker_priority mask '{{ nginx_worker_priority }}' is between -20 and 20."
+
+- name: Validate nginx_worker_processes is either auto or has a process count defined
+  when:
+    - not nginx_worker_processes.auto | default(false)
+  ansible.builtin.assert:
+    that:
+      - nginx_worker_processes.processes is defined
+    fail_msg: "nginx_worker_processes must be set to auto or have a process count defined."
+    success_msg: "nginx_worker_processes has a process count defined."
+
+- name: Validate nginx_worker_processes process count must be a positive integer
+  when:
+    - not nginx_worker_processes.auto | default(false)
+  ansible.builtin.assert:
+    that:
+      - nginx_worker_processes.processes | int > 0
+    fail_msg: "nginx_worker_processes count '{{ nginx_worker_processes.processes }}' must be positive integer."
+    success_msg: "nginx_worker_processes count '{{ nginx_worker_processes.processes }}' is a positive integer."
+
+- name: Validate nginx_logrotate_retention is a positive integer
+  when:
+    - nginx_configure_logrotate
+  ansible.builtin.assert:
+    that:
+      - nginx_logrotate_retention | int > 0
+    fail_msg: "nginx_logrotate_retention '{{ nginx_logrotate_retention }}' must be a positive integer."
+    success_msg: "nginx_logrotate_retention '{{ nginx_logrotate_retention }}' is a positive integer."
+
+- name: Validate nginx_logrotate_mode is a valid file mode
+  when:
+    - nginx_configure_logrotate
+  ansible.builtin.assert:
+    that:
+      - nginx_logrotate_mode | regex_search('^0[0-7]{3}$')
+    fail_msg: "nginx_logrotate_mode '{{ nginx_logrotate_mode }}' is not a valid file mode."
+    success_msg: "nginx_logrotate_mode '{{ nginx_logrotate_mode }}' is a valid file mode."
+
+- name: Validate HTTP config file
+  loop: "{{ nginx_http_config_files }}"
+  ansible.builtin.include_tasks: validate/http/main.yml
+  loop_control:
+    loop_var: _nginx_http_config_file

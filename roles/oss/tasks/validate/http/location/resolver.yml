@@ -1,0 +1,17 @@
+---
+- name: Validate address in resolver in location block
+  loop: "{{ _nginx_resolver.addresses }}"
+  ansible.builtin.assert:
+    that:
+      - item is ansible.utils.ip_address
+    fail_msg: "Directive 'address' in 'resolver' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid IP address. Value: {{ item }}"
+    success_msg: "Directive 'address' in 'resolver' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"
+
+- name: Validate valid in resolver in location block
+  when:
+    - _nginx_resolver.valid is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_resolver.valid | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'valid' in 'resolver' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_resolver.valid }}"
+    success_msg: "Directive 'valid' in 'resolver' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_resolver.valid }}"

@@ -1,0 +1,55 @@
+---
+- name: Validate logs in access_log in limit_except block is defined and not empty
+  when:
+    - _nginx_limit_except_block.access_log is defined
+    - not _nginx_limit_except_block.access_log.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_limit_except_block.access_log.logs | default([]) | length > 0
+    fail_msg: "Directive 'logs' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is not defined or empty."
+    success_msg: "Directive 'logs' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is defined and not empty."
+
+- name: Validate size in access_log in limit_except block
+  loop: "{{ _nginx_limit_except_block.access_log.logs | default([]) }}"
+  when:
+    - not _nginx_limit_except_block.access_log.off | default(false)
+    - item.size is defined
+  ansible.builtin.assert:
+    that:
+      - item.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ item.size }}"
+    success_msg: "Directive 'size' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.size }}"
+
+- name: Validate level in gzip in access_log in limit_except block
+  loop: "{{ _nginx_limit_except_block.access_log.logs | default([]) }}"
+  when:
+    - not _nginx_limit_except_block.access_log.off | default(false)
+    - item.gzip is defined
+    - item.gzip.level is defined
+  ansible.builtin.assert:
+    that:
+      - item.gzip.level | int >= 1
+      - item.gzip.level | int <= 9
+    fail_msg: "Directive 'level' in 'gzip' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is not between 1 and 9. Value: {{ item.gzip.level }}"
+    success_msg: "Directive 'level' in 'gzip' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.gzip.level }}"
+
+- name: Validate flush in gzip in access_log in limit_except block
+  loop: "{{ _nginx_limit_except_block.access_log.logs | default([]) }}"
+  when:
+    - not _nginx_limit_except_block.access_log.off | default(false)
+    - item.flush is defined
+  ansible.builtin.assert:
+    that:
+      - item.flush | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'flush' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ item.flush }}"
+    success_msg: "Directive 'flush' in 'access_log' in limit_except block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.flush }}"
+
+# TODO - For use in future for logrotate and/or creating directories
+
+- name: Add path in access_log in limit_except block to list of log locations
+  loop: "{{ _nginx_limit_except_block.access_log.logs | default([]) }}"
+  when:
+    - not _nginx_limit_except_block.access_log.off | default(false)
+  ansible.builtin.set_fact:
+    _nginx_access_log_locations: >-
+      {{ (_nginx_access_log_locations | default([]) + [item.path]) | unique }}

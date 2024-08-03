@@ -1,22 +1,19 @@
 ---
 nginx_appstream_version: '1.24'
 
-nginx_configure_selinux: "{{ _nginx_default_configure_selinux | default(false) }}"
 nginx_configure_logrotate: true
+nginx_configure_firewall: true
 
+nginx_logrotate_paths:
+  - /var/log/nginx/*.log
+nginx_logrotate_period: daily
 nginx_logrotate_retention: 14
-nginx_log_mode: '0640'
-
-nginx_user: "{{ _nginx_default_user | default(omit) }}"
-nginx_group: "{{ _nginx_default_group | default(omit) }}"
-
-nginx_configure_firewalld: "{{ _nginx_default_configure_firewalld | default(false) }}"
-nginx_configure_ufw: "{{ _nginx_default_configure_ufw | default(false) }}"
+nginx_logrotate_mode: '0640'
 
 nginx_allow_http: true
 nginx_allow_https: false
-nginx_firewall_tcp_ports: []
-nginx_firewall_udp_ports: []
+nginx_tcp_ports: []
+nginx_udp_ports: []
 
 nginx_worker_processes:
   auto: true
@@ -41,28 +38,30 @@ nginx_stream_includes: []
 
 nginx_http_config_files:
   - destination: /etc/nginx/conf.d/default.conf
-    client_body_timeout: 10
-    client_header_timeout: 10
-    keepalive_timeout: 10
-    send_timeout: 10
+    client_body_timeout: 10s
+    client_header_timeout: 10s
+    keepalive_timeout:
+      timeout: 10s
+    send_timeout: 10s
     large_client_header_buffers:
       count: 2
       size: 1k
     log_format:
       - name: main
         format: |-
-          'server="$server_name" host="$host” dest_port="$server_port"' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'
+          'server="$server_name" host="$host” dest_port="$server_port" ' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'
     server:
       - listen:
           - port: 80
-        server_name: _
+        server_name:
+          - _
         error_page:
-          codes:
-            - 500
-            - 502
-            - 503
-            - 504
-          uri: /50x.html
+          - codes:
+              - 500
+              - 502
+              - 503
+              - 504
+            uri: /50x.html
         access_log:
           logs:
             - path: /var/log/nginx/access.log
@@ -70,6 +69,3 @@ nginx_http_config_files:
         location:
           - path: /
             root: /usr/share/nginx/html
-
-nginx_mail_config_files: []
-nginx_stream_config_files: []

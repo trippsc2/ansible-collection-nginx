@@ -1,0 +1,88 @@
+---
+- name: Validate realm in auth_jwt in HTTP config file is defined
+  when:
+    - _nginx_http_config_file.auth_jwt is defined
+    - not _nginx_http_config_file.auth_jwt.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_jwt.realm is defined
+    fail_msg: "Directive 'realm' in 'auth_jwt' in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'realm' in 'auth_jwt' in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate token in auth_jwt in HTTP config file
+  when:
+    - _nginx_http_config_file.auth_jwt is defined
+    - not _nginx_http_config_file.auth_jwt.off | default(false)
+    - _nginx_http_config_file.auth_jwt.token is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_jwt.token | regex_search('^\$[a-zA-Z0-9_-]+$')
+    fail_msg: "Directive 'token' in 'auth_jwt' in '{{ _nginx_http_config_file.destination }}' is not a valid variable name."
+    success_msg: "Directive 'token' in 'auth_jwt' in '{{ _nginx_http_config_file.destination }}' is valid."
+
+- name: Check if auth_jwt_key_file in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.auth_jwt_key_file is defined
+  become: true
+  check_mode: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_http_config_file.auth_jwt_key_file }}"
+  register: _nginx_auth_jwt_key_file
+
+- name: Validate auth_jwt_key_file in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.auth_jwt_key_file is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_auth_jwt_key_file.stat.exists
+    fail_msg: "Directive 'auth_jwt_key_file' in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_http_config_file.auth_jwt_key_file }}"
+    success_msg: "Directive 'auth_jwt_key_file' in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_http_config_file.auth_jwt_key_file }}"
+
+- name: Validate auth_jwt_key_request in HTTP config file is a valid file
+  when:
+    - _nginx_http_config_file.auth_jwt_key_request is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_jwt_key_request is uri
+    fail_msg: "Directive 'auth_jwt_key_request' in '{{ _nginx_http_config_file.destination }}' is not a valid URI. Value: {{ _nginx_http_config_file.auth_jwt_key_request }}"
+    success_msg: "Directive 'auth_jwt_key_request' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.auth_jwt_key_request }}"
+
+- name: Validate auth_jwt_require in HTTP config file
+  loop: "{{ _nginx_http_config_file.auth_jwt_require | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/auth_jwt_require.yml
+  loop_control:
+    loop_var: _nginx_auth_jwt_require
+
+- name: Validate auth_jwt_key_cache in HTTP config file
+  when:
+    - _nginx_http_config_file.auth_jwt_key_cache is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_jwt_key_cache | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'auth_jwt_key_cache' in '{{ _nginx_http_config_file.destination }}' must be 0 or a positive duration. Value: {{ _nginx_http_config_file.auth_jwt_key_cache }}"
+    success_msg: "Directive 'auth_jwt_key_cache' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.auth_jwt_key_cache }}"
+
+- name: Validate auth_jwt_leeway in HTTP config file
+  when:
+    - _nginx_http_config_file.auth_jwt_leeway is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_jwt_leeway | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'auth_jwt_leeway' in '{{ _nginx_http_config_file.destination }}' must be 0 or a positive duration. Value: {{ _nginx_http_config_file.auth_jwt_leeway }}"
+    success_msg: "Directive 'auth_jwt_leeway' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.auth_jwt_leeway }}"
+
+- name: Validate variable in auth_jwt_claim_set in HTTP config file
+  loop: "{{ _nginx_http_config_file.auth_jwt_claim_set | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.variable | regex_search('^\$[a-zA-Z0-9_-]+$')
+    fail_msg: "Directive 'variable' in 'auth_jwt_claim_set' in '{{ _nginx_http_config_file.destination }}' is not a valid variable name. Value: {{ item.variable }}"
+    success_msg: "Directive 'variable' in 'auth_jwt_claim_set' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.variable }}"
+
+- name: Validate variable in auth_jwt_header_set in HTTP config file
+  loop: "{{ _nginx_http_config_file.auth_jwt_header_set | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.variable | regex_search('^\$[a-zA-Z0-9_-]+$')
+    fail_msg: "Directive 'variable' in 'auth_jwt_header_set' in '{{ _nginx_http_config_file.destination }}' is not a valid variable name. Value: {{ item.variable }}"
+    success_msg: "Directive 'variable' in 'auth_jwt_header_set' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.variable }}"

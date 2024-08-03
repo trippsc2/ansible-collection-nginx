@@ -16,5 +16,9 @@ platforms:
       - subjects
 provisioner:
   name: ansible
+  playbooks:
+    converge: ../common/converge.yml
+    verify: ../common/verify/main.yml
 verifier:
   name: ansible
+

@@ -1,0 +1,60 @@
+---
+- name: Prepare
+  hosts:
+    - subjects
+  pre_tasks:
+    - name: Set NGINX user variable
+      when:
+        - nginx_user is not defined
+      ansible.builtin.set_fact:
+        nginx_user: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+
+    - name: Set NGINX group variable
+      when:
+        - nginx_group is not defined
+      ansible.builtin.set_fact:
+        nginx_group: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+
+    - name: Create NGINX group
+      become: true
+      ansible.builtin.group:
+        name: "{{ nginx_group }}"
+        state: present
+        system: true
+    
+    - name: Create NGINX user
+      become: true
+      ansible.builtin.user:
+        name: "{{ nginx_user }}"
+        group: "{{ nginx_group }}"
+        state: present
+        system: true
+        password: '!'
+        password_lock: true
+        home: /usr/share/nginx
+        shell: /usr/sbin/nologin
+        createhome: false
+    
+    - name: Create NGINX client cache directory
+      become: true
+      ansible.builtin.file:
+        path: /var/cache/nginx/client
+        state: directory
+        owner: "{{ nginx_user }}"
+        group: "{{ nginx_group }}"
+        mode: '0750'
+  roles:
+    - role: trippsc2.general.self_signed_certificate
+      vars:
+        cert_certificate_path: "{{ ssl_cert_path }}"
+        cert_private_key_path: "{{ ssl_key_path }}"
+        cert_private_key_owner: "{{ nginx_user }}"
+        cert_private_key_group: "{{ nginx_group }}"
+        cert_common_name: "{{ ansible_fqdn }}"
+        cert_subject_alternative_names:
+          - 'DNS:{{ ansible_fqdn }}'
+          - 'DNS:localhost'
+          - 'IP:{{ ansible_host }}'
+          - 'IP:127.0.0.1'
+        cert_certificate_owner: "{{ nginx_user }}"
+        cert_certificate_group: "{{ nginx_group }}"

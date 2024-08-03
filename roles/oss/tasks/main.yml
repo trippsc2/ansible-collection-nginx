@@ -1,23 +1,25 @@
 ---
 - name: Validate
-  ansible.builtin.import_tasks: validate.yml
+  ansible.builtin.import_tasks: validate/main.yml
 
 - name: Install NGINX
   ansible.builtin.import_tasks: install.yml
 
 - name: Configure SELinux
   when:
-    - nginx_configure_selinux
+    - _nginx_configure_selinux
   ansible.builtin.include_tasks: selinux.yml
 
 - name: Configure firewalld
   when:
-    - nginx_configure_firewalld
+    - nginx_configure_firewall
+    - _nginx_firewall_type == 'firewalld'
   ansible.builtin.include_tasks: firewalld.yml
 
 - name: Configure UFW
   when:
-    - nginx_configure_ufw
+    - nginx_configure_firewall
+    - _nginx_firewall_type == 'ufw'
   ansible.builtin.include_tasks: ufw.yml
 
 - name: Configure NGINX

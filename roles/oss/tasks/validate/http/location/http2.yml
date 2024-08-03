@@ -1,0 +1,19 @@
+---
+- name: Validate http2_chunk_size in location block
+  when:
+    - _nginx_location_block.http2_chunk_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.http2_chunk_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'http2_chunk_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.http2_chunk_size }}"
+    success_msg: "Directive 'http2_chunk_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.http2_chunk_size }}"
+
+- name: Validate http2_push in location block
+  when:
+    - _nginx_location_block.http2_push is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.http2_push == 'off' or
+        _nginx_location_block.http2_push is uri
+    fail_msg: "Directive 'http2_push' in location block in '{{ _nginx_http_config_file.destination }}' is not 'off' or a valid URI. Value: {{ _nginx_location_block.http2_push }}"
+    success_msg: "Directive 'http2_push' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.http2_push }}"

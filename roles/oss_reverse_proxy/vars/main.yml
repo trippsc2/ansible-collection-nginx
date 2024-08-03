@@ -11,7 +11,8 @@ _nginxproxy_http_config_files:
     server:
       - listen:
           - port: 80
-        server_name: "{{ nginxproxy_redirect_server_name }}"
+        server_name:
+          - "{{ nginxproxy_redirect_server_name }}"
         server_tokens: 'off'
         location:
           - path: /
@@ -28,24 +29,26 @@ _nginxproxy_http_config_files:
             deny:
               - all
   - destination: /etc/nginx/conf.d/proxy.conf
-    client_body_timeout: 10
-    client_header_timeout: 10
+    client_body_timeout: 10s
+    client_header_timeout: 10s
     client_max_body_size: "{{ nginxproxy_max_body_size }}"
-    keepalive_timeout: 10
+    keepalive_timeout:
+      timeout: 10s
     large_client_header_buffers:
       count: 2
       size: 1k
-    send_timeout: 10
+    send_timeout: 10s
     log_format:
       - name: main
-        format: |
-          'server="$server_name" host="$host” dest_port="$server_port"' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'        
+        format: >-
+          'server="$server_name" host="$host” dest_port="$server_port"' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'
     server:
       - listen:
           - port: 443
             ssl: true
             http2: true
-        server_name: "{{ nginxproxy_server_name }}"
+        server_name: 
+          - "{{ nginxproxy_server_name }}"
         server_tokens: 'off'
         ssl_certificate:
           - "{{ nginxproxy_server_certificate_path }}"

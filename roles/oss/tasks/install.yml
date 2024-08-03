@@ -41,6 +41,8 @@
     owner: root
     group: root
     mode: '0750'
+  loop_control:
+    label: "{{ item.path }}"
 
 - name: Ensure NGINX config files have expected permissions
   loop: "{{ _nginx_config_files.files }}"
@@ -51,3 +53,5 @@
     owner: root
     group: root
     mode: '0640'
+  loop_control:
+    label: "{{ item.path }}"

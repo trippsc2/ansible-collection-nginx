@@ -1,0 +1,91 @@
+---
+- name: Validate http2_chunk_size in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_chunk_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_chunk_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'http2_chunk_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.http2_chunk_size }}"
+    success_msg: "Directive 'http2_chunk_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_chunk_size }}"
+
+- name: Validate http2_push in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_push is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_push == 'off' or
+        _nginx_http_config_file.http2_push is uri
+    fail_msg: "Directive 'http2_push' in '{{ _nginx_http_config_file.destination }}' is not 'off' or a valid URI. Value: {{ _nginx_http_config_file.http2_push }}"
+    success_msg: "Directive 'http2_push' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_push }}"
+
+- name: Validate http2_idle_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_idle_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_idle_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'http2_idle_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.http2_idle_timeout }}"
+    success_msg: "Directive 'http2_idle_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_idle_timeout }}"
+
+- name: Validate http2_max_concurrent_pushes in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_max_concurrent_pushes is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_max_concurrent_pushes | int > 0
+    fail_msg: "Directive 'http2_max_concurrent_pushes' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.http2_max_concurrent_pushes }}"
+    success_msg: "Directive 'http2_max_concurrent_pushes' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_max_concurrent_pushes }}"
+
+- name: Validate http2_max_concurrent_streams in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_max_concurrent_streams is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_max_concurrent_streams | int > 0
+    fail_msg: "Directive 'http2_max_concurrent_streams' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.http2_max_concurrent_streams }}' must be a positive integer."
+    success_msg: "Directive 'http2_max_concurrent_streams' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_max_concurrent_streams }}"
+
+- name: Validate http2_max_field_size in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_max_field_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_max_field_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'http2_max_field_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.http2_max_field_size }}"
+    success_msg: "Directive 'http2_max_field_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_max_field_size }}"
+
+- name: Validate http2_max_header_size in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_max_header_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_max_header_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'http2_max_header_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.http2_max_header_size }}"
+    success_msg: "Directive 'http2_max_header_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_max_header_size }}"
+
+- name: Validate http2_max_requests in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_max_requests is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_max_requests | int > 0
+    fail_msg: "HTTP config file http2_max_requests '{{ _nginx_http_config_file.http2_max_requests }}' must be a positive integer."
+    success_msg: "HTTP config file http2_max_requests '{{ _nginx_http_config_file.http2_max_requests }}' is a positive integer."
+
+- name: Validate http2_recv_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_recv_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_recv_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'http2_recv_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.http2_recv_timeout }}"
+    success_msg: "Directive 'http2_recv_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_recv_timeout }}"
+
+- name: Validate http2_recv_buffer_size in HTTP config file
+  when:
+    - _nginx_http_config_file.http2_recv_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.http2_recv_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'http2_recv_buffer_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.http2_recv_buffer_size }}"
+    success_msg: "Directive 'http2_recv_buffer_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.http2_recv_buffer_size }}"

@@ -1,8 +1,9 @@
 {{ ansible_managed | comment }}
 
-user {{ nginx_user }} {{ nginx_group }};
+user {{ _nginx_user }} {{ _nginx_group }};
 {% if nginx_worker_cpu_affinity is defined %}
-worker_cpu_affinity{{ ' auto' if nginx_worker_cpu_affinity.auto | default(false) }}{{ ' ' + nginx_worker_cpu_affinity.mask if nginx_worker_cpu_affinity.mask is defined }};
+worker_cpu_affinity{{ ' auto' if nginx_worker_cpu_affinity.auto | default(false) -}}
+  {{- ' ' + nginx_worker_cpu_affinity.mask | string if nginx_worker_cpu_affinity.mask is defined }};
 {% endif %}
 {% if nginx_worker_priority is defined %}
 worker_priority {{ nginx_worker_priority }};
@@ -21,22 +22,18 @@ worker_rlimit_nofile {{ nginx_worker_rlimit_nofile }};
 {% if nginx_worker_shutdown_timeout is defined %}
 worker_shutdown_timeout {{ nginx_worker_shutdown_timeout }};
 {% endif %}
-error_log {{ nginx_error_log.file }}{{ ' ' + nginx_error_log.level if nginx_error_log.level is defined }};
+error_log {{ nginx_error_log.file -}}
+  {{- ' ' + nginx_error_log.level | string if nginx_error_log.level is defined }};
 pid {{ nginx_pid }};
-{% if nginx_env | length > 0 %}
 {% for variable, value in nginx_env.items() %}
 env {{ variable }}={{ value }};
 {% endfor %}
-{% endif %}
 {% if nginx_pcre_jit is defined %}
 pcre_jit {{ nginx_pcre_jit | ternary('on', 'off') }};
 {% endif %}
 {% if nginx_ssl_engine is defined %}
 ssl_engine {{ nginx_ssl_engine }};
 {% endif %}
-{% for pool in nginx_thread_pool %}
-thread_pool {{ pool.name }} threads={{ pool.threads }}{{ ' max_queue=' + pool.max_queue | string if pool.max_queue is defined }};
-{% endfor %}
 {% if nginx_timer_resolution is defined %}
 timer_resolution {{ nginx_timer_resolution }};
 {% endif %}
@@ -59,22 +56,6 @@ events {
 
 http {
 {% for file in nginx_http_includes %}
-    include {{ file }};
-{% endfor %}
-}
-{% endif %}
-{% if nginx_mail_includes | length > 0 %}
-
-mail {
-{% for file in nginx_mail_includes %}
-    include {{ file }};
-{% endfor %}
-}
-{% endif %}
-{% if nginx_stream_includes | length > 0 %}
-
-stream {
-{% for file in nginx_stream_includes %}
     include {{ file }};
 {% endfor %}
 }

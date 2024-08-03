@@ -7,11 +7,11 @@ _nginx_non_el_supported_distributions:
   - Debian
   - Ubuntu
 
-_nginx_appstream_allowed_versions:
-  '8':
-    - '1.22'
-    - '1.24'
-  '9':
-    - '1.20'
-    - '1.22'
-    - '1.24'
+_nginx_configure_selinux: >-
+  {{ nginx_configure_selinux | default(_nginx_default_configure_selinux) }}
+
+_nginx_user: "{{ nginx_user | default(_nginx_default_user) }}"
+_nginx_group: "{{ nginx_group | default(_nginx_default_group) }}"
+
+_nginx_firewall_type: >-
+  {{ nginx_firewall_type | default(_nginx_default_firewall_type) }}

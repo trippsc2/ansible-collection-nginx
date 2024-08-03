@@ -11,29 +11,57 @@ argument_specs:
         required: false
         default: '1.24'
         description:
-          - The version of NGINX to install via AppStream.
-          - This only applies to EL systems.
+          - The version of NGINX to install via AppStream packages on EL systems.
+          - On non-EL systems, this is ignored.
+          - See https://access.redhat.com/support/policy/updates/rhel-app-streams-life-cycle for the list of available versions for each EL major version.
       nginx_configure_selinux:
         type: bool
         required: false
-        default: OS specific
         description:
           - Whether to configure SELinux.
-          - For Debian-based systems, this will default to false.
-          - For EL systems, this will default to true.
+          - Packages required to managed SELinux are installed if this is set to `true`.
+          - For Debian-based systems, this will default to `false`.
+          - For EL systems, this will default to `true`.
+      nginx_configure_firewall:
+        type: bool
+        required: false
+        default: true
+        description:
+          - Whether to configure a host firewall software for use with NGINX.
       nginx_configure_logrotate:
         type: bool
         required: false
         default: true
         description:
-          - Whether to configure logrotate.
+          - Whether to configure logrotate to manage nginx log files.
+      nginx_logrotate_paths:
+        type: list
+        required: false
+        default:
+          - /var/log/nginx/*.log
+        elements: path
+        description:
+          - The list of paths to log files to rotate.
+          - If *nginx_configure_logrotate* is set to `false`, this is ignored.
+      nginx_logrotate_period:
+        type: str
+        required: false
+        default: daily
+        choices:
+          - daily
+          - weekly
+          - monthly
+        description:
+          - The period at which logrotate will rotate log files.
+          - If *nginx_configure_logrotate* is set to `false`, this is ignored.
       nginx_logrotate_retention:
         type: int
         required: false
         default: 14
         description:
           - The number of days to retain logs.
-      nginx_log_mode:
+          - If *nginx_configure_logrotate* is set to `false`, this is ignored.
+      nginx_logrotate_mode:
         type: str
         required: false
         default: '0640'
@@ -42,68 +70,65 @@ argument_specs:
       nginx_user:
         type: str
         required: false
-        default: OS specific
         description:
           - The user as which to run NGINX.
-          - For Debian-based systems, this will default to www-data.
-          - For EL systems, this will default to nginx.
-          - If overridden, the user must already exist.
+          - For Debian-based systems, this will default to `www-data`.
+          - For EL systems, this will default to `nginx`.
+          - If overridden from the default user, the user will **not** be created and must already exist.
       nginx_group:
         type: str
         required: false
-        default: OS specific
         description:
           - The group as which to run NGINX.
-          - For Debian-based systems, this will default to www-data.
-          - For EL systems, this will default to nginx.
-          - If overridden, the user must already exist.
-      nginx_configure_firewalld:
-        type: bool
+          - For Debian-based systems, this will default to `www-data`.
+          - For EL systems, this will default to `nginx`.
+          - If overridden from the default group, the group will **not** be created and must already exist.
+      nginx_firewall_type:
+        type: str
         required: false
-        default: OS specific
+        choices:
+          - firewalld
+          - ufw
         description:
-          - Whether to configure firewalld.
-          - For EL or Debian systems, this will default to true.
-          - For Ubuntu systems, this will default to false.
-      nginx_configure_ufw:
-        type: bool
-        required: false
-        default: OS specific
-        description:
-          - Whether to configure ufw.
-          - For Ubuntu systems, this will default to true.
-          - For EL or Debian systems, this will default to false.
+          - The type of host firewall software to configure for use with NGINX.
+          - For EL or Debian systems, this will default to `firewalld`.
+          - For Ubuntu systems, this will default to `ufw`.
       nginx_allow_http:
         type: bool
         required: false
         default: true
         description:
-          - Whether to allow HTTP traffic in firewalld.
+          - Whether to allow HTTP (TCP port 80) traffic in firewalld or ufw.
       nginx_allow_https:
         type: bool
         required: false
-        default: true
+        default: false
         description:
-          - Whether to allow HTTPS traffic in firewalld.
-      nginx_firewall_tcp_ports:
+          - Whether to allow HTTPS (TCP port 443) traffic in firewalld or ufw.
+      nginx_tcp_ports:
         type: list
         required: false
         default: []
         elements: int
         description:
-          - The list of TCP ports to allow in the firewall.
-      nginx_firewall_udp_ports:
+          - The list of TCP ports on which NGINX will be listening.
+          - This list is in addition to ports 80 and 443 which are controlled by *nginx_allow_http* and *nginx_allow_https*.
+          - If *nginx_configure_firewall* is set to `true`, these ports will be allowed in the firewalld or ufw.
+          - If *nginx_configure_selinux* is set to `true`, these ports will be classified as `http_port_t`.
+      nginx_udp_ports:
         type: list
         required: false
         default: []
         elements: int
         description:
-          - The list of UDP ports to allow in the firewall.
+          - The list of UDP ports on which NGINX will be listening.
+          - If *nginx_configure_firewall* is set to `true`, these ports will be allowed in the firewalld or ufw.
+          - If *nginx_configure_selinux* is set to `true`, these ports will be classified as `http_port_t`.
       nginx_worker_cpu_affinity:
         type: dict
         required: false
         description:
-          - The CPU affinity configuration for worker processes.
+          - The CPU affinity configuration for NGINX worker processes.
           - https://nginx.org/en/docs/ngx_core_module.html#worker_cpu_affinity
         options:
           auto:
@@ -117,7 +142,8 @@ argument_specs:
             type: str
             required: false
             description:
-              - The CPU mask.
+              - The CPU core affinity mask on which NGINX worker processes will run.
+              - If *auto* is set to `false`, this is required.
               - https://nginx.org/en/docs/ngx_core_module.html#worker_cpu_affinity
       nginx_worker_priority:
         type: int
@@ -138,7 +164,7 @@ argument_specs:
           auto:
             type: bool
             required: false
-            default: true
+            default: false
             description:
               - Whether to automatically determine the number of worker processes.
               - https://nginx.org/en/docs/ngx_core_module.html#worker_processes
@@ -147,6 +173,8 @@ argument_specs:
             required: false
             description:
               - The number of worker processes.
+              - If *auto* is set to `true`, this is ignored.
+              - Otherwise, this is required.
               - https://nginx.org/en/docs/ngx_core_module.html#worker_processes
       nginx_worker_rlimit_core:
         type: str
@@ -199,18 +227,19 @@ argument_specs:
               - The log level for the main error log.
               - https://nginx.org/en/docs/ngx_core_module.html#error_log
       nginx_pid:
-        type: str
+        type: path
         required: false
         default: /var/run/nginx.pid
         description:
           - The path to the PID file.
           - https://nginx.org/en/docs/ngx_core_module.html#pid
-      nginx_env_vars:
+      nginx_env:
         type: dict
         required: false
         default: {}
         description:
           - Environment variables to set for NGINX.
+          - The name of the environment variable is the key, and the value is the value.
           - https://nginx.org/en/docs/ngx_core_module.html#env
       nginx_pcre_jit:
         type: bool
@@ -224,33 +253,6 @@ argument_specs:
         description:
           - The path to SSL acceleration engine to use.
           - https://nginx.org/en/docs/ngx_core_module.html#ssl_engine
-      nginx_thread_pool:
-        type: list
-        required: false
-        default: []
-        elements: dict
-        description:
-          - The list of thread pools.
-          - https://nginx.org/en/docs/ngx_core_module.html#thread_pool
-        options:
-          name:
-            type: str
-            required: true
-            description:
-              - The name of the thread pool.
-              - https://nginx.org/en/docs/ngx_core_module.html#thread_pool
-          threads:
-            type: int
-            required: true
-            description:
-              - The number of threads in the pool.
-              - https://nginx.org/en/docs/ngx_core_module.html#thread_pool
-          max_queue:
-            type: int
-            required: false
-            description:
-              - The maximum number of tasks in the queue.
-              - https://nginx.org/en/docs/ngx_core_module.html#thread_pool
       nginx_timer_resolution:
         type: str
         required: false
@@ -282,6 +284,16 @@ argument_specs:
         description:
           - The maximum number of connections for a single worker process.
           - https://nginx.org/en/docs/ngx_core_module.html#worker_connections
+      nginx_http_includes:
+        type: list
+        required: false
+        default:
+          - /etc/nginx/mime.types
+          - /etc/nginx/conf.d/*.conf
+        elements: path
+        description:
+          - The list of HTTP include files.
+          - https://nginx.org/en/docs/ngx_core_module.html#include
       nginx_http_config_files:
         type: list
         required: false
@@ -289,27 +301,33 @@ argument_specs:
           - destination: /etc/nginx/conf.d/default.conf
             client_body_timeout: 10
             client_header_timeout: 10
-            keepalive_timeout: 10
+            keepalive_timeout:
+              timeout: 10
             send_timeout: 10
             large_client_header_buffers:
               count: 2
               size: 1k
             log_format:
               - name: main
-                format: |
-                  'server="$server_name" host="$host” dest_port="$server_port"' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'
+                format: |-
+                  'server="$server_name" host="$host” dest_port="$server_port" '
+                  'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" '
+                  'time_local="$time_local" http_status="$status" '
+                  'http_referer="$http_referer" http_user_agent="$http_user_agent" '
+                  'http_x_forwarded_for="$http_x_forwarded_for" '
+                  'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" '
+                  'request=$request http_method="$request_method"'
             server:
               - listen:
-                  port: 80
-                server_name:
-                  - _
+                  - port: 80
+                server_name: _
                 error_page:
-                  codes:
-                    - 500
-                    - 502
-                    - 503
-                    - 504
-                  uri: /50x.html
+                  - codes:
+                      - 500
+                      - 502
+                      - 503
+                      - 504
+                    uri: /50x.html
                 access_log:
                   logs:
                     - path: /var/log/nginx/access.log
@@ -325,10 +343,11 @@ argument_specs:
             type: path
             required: true
             description:
-              - The path to the configuration file.
+              - The path of the HTTP configuration file.
           error_page:
-            type: dict
+            type: list
             required: false
+            elements: dict
             description:
               - The error page configuration.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
@@ -338,20 +357,24 @@ argument_specs:
                 required: true
                 elements: int
                 description:
-                  - The list of error codes.
+                  - The list of error codes for which this directive applies.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
               response:
                 type: str
                 required: false
                 description:
-                  - The response to send for the error.
-                  - A value of `=` will return the error code.
+                  - The response code configuration when the specified error codes would normally occur.
+                  - If not defined, the response code from the redirected URI is used.
+                  - If defined, this must be either `=` or `=XXX` with XXX being a response code.
+                  - If set to `=`, the original response code is retained.
+                  - If set to `=XXX`, the response code is replaced with `XXX`.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
               uri:
-                type: path
+                type: str
                 required: true
                 description:
                   - The URI of the error page.
+                  - Alternatively, this can be set to `@` followed by the name of a location block to reference it.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
           limit_rate:
             type: str
@@ -384,32 +407,11 @@ argument_specs:
               - Whether to use absolute URIs in redirects.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#absolute_redirect
           aio:
-            type: dict
+            type: bool
             required: false
             description:
-              - The asynchronous I/O configuration.
+              - Whether to use asynchronous I/O.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-            options:
-              'on':
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to use the `on` keyword.
-                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-              'off':
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to use the `off` keyword.
-                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-              threads:
-                type: int
-                required: false
-                description:
-                  - The number of threads for the asynchronous I/O configuration.
-                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
           auth_delay:
             type: str
             required: false
@@ -561,6 +563,9 @@ argument_specs:
                 type: list
                 required: false
                 default: []
+                choices:
+                  - msie6
+                  - safari
                 elements: str
                 description:
                   - The list of browsers for which to disable keepalive connections.
@@ -578,11 +583,24 @@ argument_specs:
               - The time period over which to keep a keepalive connection open.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_time
           keepalive_timeout:
-            type: str
+            type: dict
             required: false
             description:
               - The timeout for keepalive connections.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+            options:
+              timeout:
+                type: str
+                required: true
+                description:
+                  - The time period for the keepalive timeout.
+                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+              header_timeout:
+                type: str
+                required: false
+                description:
+                  - The time period for the keepalive header timeout.
+                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
           lingering_close:
             type: str
             required: false
@@ -704,6 +722,12 @@ argument_specs:
             description:
               - Whether to include the port in redirects.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#port_in_redirect
+          postpone_output:
+            type: int
+            required: false
+            description:
+              - The number of bytes NGINX will wait for before sending data, if possible.
+              - https://nginx.org/en/docs/http/ngx_http_core_module.html#postpone_output
           read_ahead:
             type: str
             required: false
@@ -791,6 +815,12 @@ argument_specs:
             description:
               - The timeout for sending data.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout
+          sendfile_max_chunk:
+            type: str
+            required: false
+            description:
+              - The maximum size of a file chunk to send.
+              - https://nginx.org/en/docs/http/ngx_http_core_module.html#sendfile_max_chunk
           server_name_in_redirect:
             type: bool
             required: false
@@ -840,6 +870,28 @@ argument_specs:
             description:
               - The maximum size of the types hash.
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#types_hash_max_size
+          types:
+            type: list
+            required: false
+            default: []
+            elements: dict
+            description:
+              - The list of MIME types mapped to file extensions.
+              - https://nginx.org/en/docs/http/ngx_http_core_module.html#types
+            options:
+              mime:
+                type: str
+                required: true
+                description:
+                  - The MIME type.
+                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#types
+              extensions:
+                type: list
+                required: true
+                elements: str
+                description:
+                  - The list of file extensions.
+                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#types
           client_header_buffer_size:
             type: str
             required: false
@@ -987,12 +1039,6 @@ argument_specs:
             description:
               - The maximum number of requests per HTTP/2 connection.
               - https://nginx.org/en/docs/http/ngx_http_v2_module.html#http2_max_requests
-          http2_recv_timeout:
-            type: str
-            required: false
-            description:
-              - The timeout for receiving HTTP/2 data.
-              - https://nginx.org/en/docs/http/ngx_http_v2_module.html#http2_recv_timeout
           http2_recv_buffer_size:
             type: str
             required: false
@@ -1335,6 +1381,12 @@ argument_specs:
             description:
               - The size of the proxy buffer.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffer_size
+          proxy_buffering:
+            type: bool
+            required: false
+            description:
+              - Whether to enable proxy buffering.
+              - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering
           proxy_buffers:
             type: dict
             required: false
@@ -1413,7 +1465,7 @@ argument_specs:
               - The timeout for acquiring a lock for the proxy cache.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_lock_timeout
           proxy_cache_max_range_offset:
-            type: str
+            type: int
             required: false
             description:
               - The maximum range offset for the proxy cache.
@@ -1451,25 +1503,38 @@ argument_specs:
               - Whether to enable revalidation for the proxy cache.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_revalidate
           proxy_cache_use_stale:
-            type: list
+            type: dict
             required: false
-            choices:
-              - error
-              - timeout
-              - invalid_header
-              - updating
-              - http_500
-              - http_502
-              - http_503
-              - http_504
-              - http_403
-              - http_404
-              - http_429
-            elements: str
             description:
-              - The list of conditions under which to use stale responses for the proxy cache.
-              - If this is defined as an empty list, it will be set to off.
+              - The configuration for the proxy_cache_use_stale directive.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
+            options:
+              'off':
+                type: bool
+                required: false
+                default: false
+                description:
+                  - Whether to disable the proxy_cache_use_stale directive.
+                  - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
+              conditions:
+                type: list
+                required: false
+                elements: str
+                choices:
+                  - error
+                  - timeout
+                  - invalid_header
+                  - updating
+                  - http_500
+                  - http_502
+                  - http_503
+                  - http_504
+                  - http_403
+                  - http_404
+                  - http_429
+                description:
+                  - The list of conditions under which to use stale cache data.
+                  - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
           proxy_cache_valid:
             type: list
             required: false
@@ -1481,7 +1546,7 @@ argument_specs:
             options:
               codes:
                 type: list
-                required: true
+                required: false
                 elements: int
                 description:
                   - The status codes for which to cache a response.
@@ -1684,25 +1749,38 @@ argument_specs:
               - The method to use for the proxy.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_method
           proxy_next_upstream:
-            type: list
+            type: dict
             required: false
-            default: []
-            choices:
-              - error
-              - timeout
-              - invalid_header
-              - http_500
-              - http_502
-              - http_503
-              - http_504
-              - http_403
-              - http_404
-              - http_429
-              - non_idempotent
-            elements: str
             description:
-              - The list of conditions under which to select the next upstream server for the proxy.
+              - The configuration for the proxy_next_upstream directive.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
+            options:
+              'off':
+                type: bool
+                required: false
+                default: false
+                description:
+                  - Whether to disable the proxy_next_upstream directive.
+                  - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
+              conditions:
+                type: list
+                required: false
+                elements: str
+                choices:
+                  - error
+                  - timeout
+                  - invalid_header
+                  - http_500
+                  - http_502
+                  - http_503
+                  - http_504
+                  - http_403
+                  - http_404
+                  - http_429
+                  - non_idempotent
+                description:
+                  - The list of conditions under which to select the next upstream server.
+                  - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
           proxy_next_upstream_timeout:
             type: str
             required: false
@@ -1719,18 +1797,10 @@ argument_specs:
             type: list
             required: false
             default: []
-            elements: dict
+            elements: str
             description:
               - The list of conditions under which to disable caching for the proxy.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_no_cache
-            options:
-              conditions:
-                type: list
-                required: true
-                elements: str
-                description:
-                  - The condition under which to disable caching.
-                  - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_no_cache
           proxy_pass_header:
             type: list
             required: false
@@ -2037,8 +2107,10 @@ argument_specs:
                   - The number of levels of subdirectories to create.
                   - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_temp_path
           proxy_cache_path:
-            type: dict
+            type: list
             required: false
+            default: []
+            elements: dict
             description:
               - The proxy cache path configuration.
               - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_path
@@ -2057,7 +2129,6 @@ argument_specs:
                   - 0
                   - 1
                   - 2
-                  - 3
                 description:
                   - The number of levels of subdirectories to create.
                   - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_path
@@ -2242,7 +2313,7 @@ argument_specs:
                 description:
                   - Whether to disable the gRPC next upstream.
                   - https://nginx.org/en/docs/http/ngx_http_grpc_module.html#grpc_next_upstream
-              upstreams:
+              conditions:
                 type: list
                 required: false
                 choices:
@@ -2721,6 +2792,12 @@ argument_specs:
                 description:
                   - The size of the buffer.
                   - https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_buffers
+          gzip_comp_level:
+            type: int
+            required: false
+            description:
+              - The compression level for response compression.
+              - https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_comp_level
           gzip_disable:
             type: list
             required: false
@@ -2733,13 +2810,13 @@ argument_specs:
             type: str
             required: false
             choices:
-              - 1.0
-              - 1.1
+              - '1.0'
+              - '1.1'
             description:
               - The HTTP version for response compression.
               - https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_http_version
           gzip_min_length:
-            type: str
+            type: int
             required: false
             description:
               - The minimum length of the response to compress.
@@ -2765,7 +2842,7 @@ argument_specs:
                 description:
                   - Whether to enable response compression for any proxy.
                   - https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_proxied
-              values:
+              conditions:
                 type: list
                 required: false
                 choices:
@@ -2904,8 +2981,9 @@ argument_specs:
                   - The time to set the expiration.
                   - https://nginx.org/en/docs/http/ngx_http_headers_module.html#expires
           limit_req:
-            type: dict
+            type: list
             required: false
+            elements: dict
             description:
               - The request rate limiting configuration.
               - https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req
@@ -3160,7 +3238,7 @@ argument_specs:
               - The size of the hash bucket for the map.
               - https://nginx.org/en/docs/http/ngx_http_map_module.html#map_hash_bucket_size
           map_hash_max_size:
-            type: str
+            type: int
             required: false
             description:
               - The maximum size of the hash for the map.
@@ -3193,8 +3271,10 @@ argument_specs:
               - Whether to mirror the request body.
               - https://nginx.org/en/docs/http/ngx_http_mirror_module.html#mirror_request_body
           set_real_ip_from:
-            type: str
+            type: list
             required: false
+            default: []
+            elements: str
             description:
               - The IP address or CIDR block from which to set the real IP.
               - https://nginx.org/en/docs/http/ngx_http_realip_module.html#set_real_ip_from
@@ -3270,170 +3350,61 @@ argument_specs:
             elements: str
             description:
               - The list of custom directives to include in the configuration.
-          upstream:
+          map:
             type: list
             required: false
+            default: []
             elements: dict
             description:
-              - The list of upstream blocks.
-              - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream
+              - The map configuration.
+              - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
             options:
-              name:
-                description:
-                  - The name of the upstream block.
+              string:
                 type: str
                 required: true
-              server:
-                type: list
-                required: false
-                default: []
-                elements: dict
                 description:
-                  - The list of server declarations.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                options:
-                  address:
-                    type: str
-                    required: true
-                    description:
-                      - The address of the server.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                  weight:
-                    type: int
-                    required: false
-                    description:
-                      - The weight of the server.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                  max_conns:
-                    type: int
-                    required: false
-                    description:
-                      - The maximum number of connections to the server.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                  max_fails:
-                    type: int
-                    required: false
-                    description:
-                      - The number of failed attempts within the fail_timeout period before the server is considered failed.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                  fail_timeout:
-                    type: str
-                    required: false
-                    description:
-                      - The time period over which to evaluation the server for failure.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                  backup:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether the server is a backup server.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-                  down:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether the server is initially considered down.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
-              zone:
-                description:
-                  - The shared memory zone for the upstream block.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#zone
-                type: dict
-                required: false
-                options:
-                  name:
-                    description:
-                      - The name of the shared memory zone.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#zone
-                    type: str
-                    required: true
-                  size:
-                    description:
-                      - The size of the shared memory zone.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#zone
-                    type: str
-                    required: true
-              load_balancing_method:
-                description:
-                  - The load balancing method for the upstream block.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#least_conn
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
+                  - The variable from which to map.
+                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
+              variable:
                 type: str
-                choices:
-                  - hash
-                  - ip_hash
-                  - least_conn
-                  - random
-                required: false
-              hash:
-                type: dict
                 required: false
                 description:
-                  - The hash key for the upstream block.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
-                options:
-                  key:
-                    type: str
-                    required: true
-                    description:
-                      - The key for the hash.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
-                  consistent:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether the hash is consistent.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
-              random:
-                type: dict
+                  - The varaible to which to map.
+                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
+              hostnames:
+                type: bool
                 required: false
                 default: false
                 description:
-                  - The random choice method for the upstream block.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
+                  - Whether to map hostnames.
+                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
+              volatile:
+                type: bool
+                required: false
+                default: false
+                description:
+                  - Whether the map is volatile.
+                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
+              content:
+                type: list
+                required: false
+                elements: dict
+                description:
+                  - The list of map content.
+                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
                 options:
-                  two:
-                    type: dict
-                    required: false
+                  match:
+                    type: str
+                    required: true
                     description:
-                      - If defined, two random choices are made.
-                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
-                    options:
-                      method:
-                        type: str
-                        required: false
-                        description:
-                          - The method for deciding between the two random choices.
-                          - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
-              keepalive:
-                description:
-                  - The maximum number of idle keepalive connections to keep open.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
-                type: int
-                required: false
-              keepalive_requests:
-                description:
-                  - The maximum number of requests to allow on a keepalive connection.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_requests
-                type: int
-                required: false
-              keepalive_time:
-                description:
-                  - The time period over which to keep a keepalive connection open.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_time
-                type: str
-                required: false
-              keepalive_timeout:
-                description:
-                  - The timeout for keepalive connections.
-                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_timeout
-                type: str
-                required: false
+                      - The key to map.
+                      - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
+                  value:
+                    type: str
+                    required: true
+                    description:
+                      - The value to map.
+                      - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
           server:
             type: list
             required: false
@@ -3444,8 +3415,9 @@ argument_specs:
               - https://nginx.org/en/docs/http/ngx_http_core_module.html#server
             options:
               error_page:
-                type: dict
+                type: list
                 required: false
+                elements: dict
                 description:
                   - The error page configuration.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
@@ -3455,20 +3427,24 @@ argument_specs:
                     required: true
                     elements: int
                     description:
-                      - The list of error codes.
+                      - The list of error codes for which this directive applies.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                   response:
                     type: str
                     required: false
                     description:
-                      - The response to send for the error.
-                      - A value of `=` will return the error code.
+                      - The response code configuration when the specified error codes would normally occur.
+                      - If not defined, the response code from the redirected URI is used.
+                      - If defined, this must be either `=` or `=XXX` with XXX being a response code.
+                      - If set to `=`, the original response code is retained.
+                      - If set to `=XXX`, the response code is replaced with `XXX`.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                   uri:
-                    type: path
+                    type: str
                     required: true
                     description:
                       - The URI of the error page.
+                      - Alternatively, this can be set to `@` followed by the name of a location block to reference it.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
               limit_rate:
                 type: str
@@ -3501,32 +3477,11 @@ argument_specs:
                   - Whether to use absolute URIs in redirects.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#absolute_redirect
               aio:
-                type: dict
+                type: bool
                 required: false
                 description:
-                  - The asynchronous I/O configuration.
+                  - Whether to use asynchronous I/O.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-                options:
-                  'on':
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to use the `on` keyword.
-                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-                  'off':
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to use the `off` keyword.
-                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-                  threads:
-                    type: int
-                    required: false
-                    description:
-                      - The number of threads for the asynchronous I/O configuration.
-                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
               auth_delay:
                 type: str
                 required: false
@@ -3695,11 +3650,24 @@ argument_specs:
                   - The time period over which to keep a keepalive connection open.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_time
               keepalive_timeout:
-                type: str
+                type: dict
                 required: false
                 description:
                   - The timeout for keepalive connections.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+                options:
+                  timeout:
+                    type: str
+                    required: true
+                    description:
+                      - The time period for the keepalive timeout.
+                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+                  header_timeout:
+                    type: str
+                    required: false
+                    description:
+                      - The time period for the keepalive header timeout.
+                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
               lingering_close:
                 type: str
                 required: false
@@ -3821,6 +3789,12 @@ argument_specs:
                 description:
                   - Whether to include the port in redirects.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#port_in_redirect
+              postpone_output:
+                type: int
+                required: false
+                description:
+                  - The number of bytes NGINX will wait for before sending data, if possible.
+                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#postpone_output
               read_ahead:
                 type: str
                 required: false
@@ -3908,6 +3882,12 @@ argument_specs:
                 description:
                   - The timeout for sending data.
                   - https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout
+              sendfile_max_chunk:
+                type: str
+                required: false
+                description:
+                  - The maximum size of a file chunk to send.
+                  - https://nginx.org/en/docs/http/ngx_http_core_module.html#sendfile_max_chunk
               server_name_in_redirect:
                 type: bool
                 required: false
@@ -4030,7 +4010,7 @@ argument_specs:
                   files:
                     type: list
                     required: true
-                    elements: path
+                    elements: str
                     description:
                       - The list of files to try.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#try_files
@@ -4146,7 +4126,6 @@ argument_specs:
                   ipv6only:
                     type: bool
                     required: false
-                    default: false
                     description:
                       - Whether to enable IPv6 only.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
@@ -4269,12 +4248,6 @@ argument_specs:
                 description:
                   - The maximum number of requests per HTTP/2 connection.
                   - https://nginx.org/en/docs/http/ngx_http_v2_module.html#http2_max_requests
-              http2_recv_timeout:
-                type: str
-                required: false
-                description:
-                  - The timeout for receiving HTTP/2 data.
-                  - https://nginx.org/en/docs/http/ngx_http_v2_module.html#http2_recv_timeout
               ssl_buffer_size:
                 type: str
                 required: false
@@ -4729,23 +4702,37 @@ argument_specs:
               proxy_cache_use_stale:
                 type: list
                 required: false
-                choices:
-                  - error
-                  - timeout
-                  - invalid_header
-                  - updating
-                  - http_500
-                  - http_502
-                  - http_503
-                  - http_504
-                  - http_403
-                  - http_404
-                  - http_429
-                elements: str
+                elements: dict
                 description:
-                  - The list of conditions under which to use stale responses for the proxy cache.
-                  - If this is defined as an empty list, it will be set to off.
+                  - The configuration for the proxy_cache_use_stale directive.
                   - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
+                options:
+                  'off':
+                    type: bool
+                    required: false
+                    default: false
+                    description:
+                      - Whether to disable the proxy_cache_use_stale directive.
+                      - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
+                  conditions:
+                    type: list
+                    required: false
+                    elements: str
+                    choices:
+                      - error
+                      - timeout
+                      - invalid_header
+                      - updating
+                      - http_500
+                      - http_502
+                      - http_503
+                      - http_504
+                      - http_403
+                      - http_404
+                      - http_429
+                    description:
+                      - The list of conditions under which to use stale cache data.
+                      - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
               proxy_cache_valid:
                 type: list
                 required: false
@@ -4963,22 +4950,37 @@ argument_specs:
                 type: list
                 required: false
                 default: []
-                choices:
-                  - error
-                  - timeout
-                  - invalid_header
-                  - http_500
-                  - http_502
-                  - http_503
-                  - http_504
-                  - http_403
-                  - http_404
-                  - http_429
-                  - non_idempotent
-                elements: str
+                elements: dict
                 description:
-                  - The list of conditions under which to select the next upstream server for the proxy.
+                  - The configuration for the proxy_next_upstream directive.
                   - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
+                options:
+                  'off':
+                    type: bool
+                    required: false
+                    default: false
+                    description:
+                      - Whether to disable the proxy_next_upstream directive.
+                      - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
+                  conditions:
+                    type: list
+                    required: false
+                    elements: str
+                    choices:
+                      - error
+                      - timeout
+                      - invalid_header
+                      - http_500
+                      - http_502
+                      - http_503
+                      - http_504
+                      - http_403
+                      - http_404
+                      - http_429
+                      - non_idempotent
+                    description:
+                      - The list of conditions under which to select the next upstream server.
+                      - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
               proxy_next_upstream_timeout:
                 type: str
                 required: false
@@ -4995,18 +4997,10 @@ argument_specs:
                 type: list
                 required: false
                 default: []
-                elements: dict
+                elements: str
                 description:
                   - The list of conditions under which to disable caching for the proxy.
                   - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_no_cache
-                options:
-                  conditions:
-                    type: list
-                    required: true
-                    elements: str
-                    description:
-                      - The condition under which to disable caching.
-                      - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_no_cache
               proxy_pass_header:
                 type: list
                 required: false
@@ -5736,7 +5730,7 @@ argument_specs:
               stub_status:
                 type: bool
                 required: false
-                default: true
+                default: false
                 description:
                   - Whether to enable the stub status module.
                   - https://nginx.org/en/docs/http/ngx_http_stub_status_module.html#stub_status
@@ -5876,7 +5870,7 @@ argument_specs:
                     description:
                       - Whether to enable response compression for any proxy.
                       - https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_proxied
-                  values:
+                  conditions:
                     type: list
                     required: false
                     choices:
@@ -6015,8 +6009,9 @@ argument_specs:
                       - The time to set the expiration.
                       - https://nginx.org/en/docs/http/ngx_http_headers_module.html#expires
               limit_req:
-                type: dict
+                type: list
                 required: false
+                elements: dict
                 description:
                   - The request rate limiting configuration.
                   - https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req
@@ -6228,8 +6223,10 @@ argument_specs:
                   - Whether to mirror the request body.
                   - https://nginx.org/en/docs/http/ngx_http_mirror_module.html#mirror_request_body
               set_real_ip_from:
-                type: str
+                type: list
                 required: false
+                default: []
+                elements: str
                 description:
                   - The IP address or CIDR block from which to set the real IP.
                   - https://nginx.org/en/docs/http/ngx_http_realip_module.html#set_real_ip_from
@@ -6257,6 +6254,12 @@ argument_specs:
                 description:
                   - Whether to warn about uninitialized variables.
                   - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#uninitialized_variable_warn
+              break:
+                type: bool
+                required: false
+                description:
+                  - Whether to break rewrite processing.
+                  - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#break
               return:
                 type: dict
                 required: false
@@ -6303,7 +6306,7 @@ argument_specs:
                     description:
                       - The replacement value.
                       - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite
-                  flags:
+                  flag:
                     type: str
                     required: false
                     description:
@@ -6405,8 +6408,9 @@ argument_specs:
                       - The location path.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#location
                   error_page:
-                    type: dict
+                    type: list
                     required: false
+                    elements: dict
                     description:
                       - The error page configuration.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
@@ -6416,20 +6420,24 @@ argument_specs:
                         required: true
                         elements: int
                         description:
-                          - The list of error codes.
+                          - The list of error codes for which this directive applies.
                           - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                       response:
                         type: str
                         required: false
                         description:
-                          - The response to send for the error.
-                          - A value of `=` will return the error code.
+                          - The response code configuration when the specified error codes would normally occur.
+                          - If not defined, the response code from the redirected URI is used.
+                          - If defined, this must be either `=` or `=XXX` with XXX being a response code.
+                          - If set to `=`, the original response code is retained.
+                          - If set to `=XXX`, the response code is replaced with `XXX`.
                           - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                       uri:
-                        type: path
+                        type: str
                         required: true
                         description:
                           - The URI of the error page.
+                          - Alternatively, this can be set to `@` followed by the name of a location block to reference it.
                           - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                   limit_rate:
                     type: str
@@ -6462,32 +6470,11 @@ argument_specs:
                       - Whether to use absolute URIs in redirects.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#absolute_redirect
                   aio:
-                    type: dict
+                    type: bool
                     required: false
                     description:
-                      - The asynchronous I/O configuration.
+                      - Whether to use asynchronous I/O.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-                    options:
-                      'on':
-                        type: bool
-                        required: false
-                        default: false
-                        description:
-                          - Whether to use the `on` keyword.
-                          - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-                      'off':
-                        type: bool
-                        required: false
-                        default: false
-                        description:
-                          - Whether to use the `off` keyword.
-                          - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
-                      threads:
-                        type: int
-                        required: false
-                        description:
-                          - The number of threads for the asynchronous I/O configuration.
-                          - https://nginx.org/en/docs/http/ngx_http_core_module.html#aio
                   auth_delay:
                     type: str
                     required: false
@@ -6656,11 +6643,24 @@ argument_specs:
                       - The time period over which to keep a keepalive connection open.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_time
                   keepalive_timeout:
-                    type: str
+                    type: dict
                     required: false
                     description:
                       - The timeout for keepalive connections.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+                    options:
+                      timeout:
+                        type: str
+                        required: true
+                        description:
+                          - The time period for the keepalive timeout.
+                          - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+                      header_timeout:
+                        type: str
+                        required: false
+                        description:
+                          - The time period for the keepalive header timeout.
+                          - https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
                   lingering_close:
                     type: str
                     required: false
@@ -6782,6 +6782,12 @@ argument_specs:
                     description:
                       - Whether to include the port in redirects.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#port_in_redirect
+                  postpone_output:
+                    type: int
+                    required: false
+                    description:
+                      - The number of bytes NGINX will wait for before sending data, if possible.
+                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#postpone_output
                   read_ahead:
                     type: str
                     required: false
@@ -6869,6 +6875,12 @@ argument_specs:
                     description:
                       - The timeout for sending data.
                       - https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout
+                  sendfile_max_chunk:
+                    type: str
+                    required: false
+                    description:
+                      - The maximum size of a file chunk to send.
+                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#sendfile_max_chunk
                   server_name_in_redirect:
                     type: bool
                     required: false
@@ -6941,6 +6953,12 @@ argument_specs:
                           - The response to send if the file is not found.
                           - This can either be a URI or an error code.
                           - https://nginx.org/en/docs/http/ngx_http_core_module.html#try_files
+                  alias:
+                    type: str
+                    required: false
+                    description:
+                      - The alias for the location.
+                      - https://nginx.org/en/docs/http/ngx_http_core_module.html#alias
                   internal:
                     type: bool
                     required: false
@@ -7119,23 +7137,37 @@ argument_specs:
                   proxy_cache_use_stale:
                     type: list
                     required: false
-                    choices:
-                      - error
-                      - timeout
-                      - invalid_header
-                      - updating
-                      - http_500
-                      - http_502
-                      - http_503
-                      - http_504
-                      - http_403
-                      - http_404
-                      - http_429
-                    elements: str
+                    elements: dict
                     description:
-                      - The list of conditions under which to use stale responses for the proxy cache.
-                      - If this is defined as an empty list, it will be set to off.
+                      - The configuration for the proxy_cache_use_stale directive.
                       - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
+                    options:
+                      'off':
+                        type: bool
+                        required: false
+                        default: false
+                        description:
+                          - Whether to disable the proxy_cache_use_stale directive.
+                          - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
+                      conditions:
+                        type: list
+                        required: false
+                        elements: str
+                        choices:
+                          - error
+                          - timeout
+                          - invalid_header
+                          - updating
+                          - http_500
+                          - http_502
+                          - http_503
+                          - http_504
+                          - http_403
+                          - http_404
+                          - http_429
+                        description:
+                          - The list of conditions under which to use stale cache data.
+                          - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_use_stale
                   proxy_cache_valid:
                     type: list
                     required: false
@@ -7353,22 +7385,37 @@ argument_specs:
                     type: list
                     required: false
                     default: []
-                    choices:
-                      - error
-                      - timeout
-                      - invalid_header
-                      - http_500
-                      - http_502
-                      - http_503
-                      - http_504
-                      - http_403
-                      - http_404
-                      - http_429
-                      - non_idempotent
-                    elements: str
+                    elements: dict
                     description:
-                      - The list of conditions under which to select the next upstream server for the proxy.
+                      - The configuration for the proxy_next_upstream directive.
                       - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
+                    options:
+                      'off':
+                        type: bool
+                        required: false
+                        default: false
+                        description:
+                          - Whether to disable the proxy_next_upstream directive.
+                          - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
+                      conditions:
+                        type: list
+                        required: false
+                        elements: str
+                        choices:
+                          - error
+                          - timeout
+                          - invalid_header
+                          - http_500
+                          - http_502
+                          - http_503
+                          - http_504
+                          - http_403
+                          - http_404
+                          - http_429
+                          - non_idempotent
+                        description:
+                          - The list of conditions under which to select the next upstream server.
+                          - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_next_upstream
                   proxy_next_upstream_timeout:
                     type: str
                     required: false
@@ -7385,18 +7432,10 @@ argument_specs:
                     type: list
                     required: false
                     default: []
-                    elements: dict
+                    elements: str
                     description:
                       - The list of conditions under which to disable caching for the proxy.
                       - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_no_cache
-                    options:
-                      conditions:
-                        type: list
-                        required: true
-                        elements: str
-                        description:
-                          - The condition under which to disable caching.
-                          - https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_no_cache
                   proxy_pass_header:
                     type: list
                     required: false
@@ -8138,7 +8177,7 @@ argument_specs:
                   stub_status:
                     type: bool
                     required: false
-                    default: true
+                    default: false
                     description:
                       - Whether to enable the stub status module.
                       - https://nginx.org/en/docs/http/ngx_http_stub_status_module.html#stub_status
@@ -8278,7 +8317,7 @@ argument_specs:
                         description:
                           - Whether to enable response compression for any proxy.
                           - https://nginx.org/en/docs/http/ngx_http_gzip_module.html#gzip_proxied
-                      values:
+                      conditions:
                         type: list
                         required: false
                         choices:
@@ -8417,8 +8456,9 @@ argument_specs:
                           - The time to set the expiration.
                           - https://nginx.org/en/docs/http/ngx_http_headers_module.html#expires
                   limit_req:
-                    type: dict
+                    type: list
                     required: false
+                    elements: dict
                     description:
                       - The request rate limiting configuration.
                       - https://nginx.org/en/docs/http/ngx_http_limit_req_module.html#limit_req
@@ -8630,8 +8670,10 @@ argument_specs:
                       - Whether to mirror the request body.
                       - https://nginx.org/en/docs/http/ngx_http_mirror_module.html#mirror_request_body
                   set_real_ip_from:
-                    type: str
+                    type: list
                     required: false
+                    default: []
+                    elements: str
                     description:
                       - The IP address or CIDR block from which to set the real IP.
                       - https://nginx.org/en/docs/http/ngx_http_realip_module.html#set_real_ip_from
@@ -8659,6 +8701,12 @@ argument_specs:
                     description:
                       - Whether to warn about uninitialized variables.
                       - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#uninitialized_variable_warn
+                  break:
+                    type: bool
+                    required: false
+                    description:
+                      - Whether to break rewrite processing.
+                      - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#break
                   return:
                     type: dict
                     required: false
@@ -8804,8 +8852,9 @@ argument_specs:
                           - The condition to evaluate.
                           - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#if
                       error_page:
-                        type: dict
+                        type: list
                         required: false
+                        elements: dict
                         description:
                           - The error page configuration.
                           - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
@@ -8815,20 +8864,24 @@ argument_specs:
                             required: true
                             elements: int
                             description:
-                              - The list of error codes.
+                              - The list of error codes for which this directive applies.
                               - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                           response:
                             type: str
                             required: false
                             description:
-                              - The response to send for the error.
-                              - A value of `=` will return the error code.
+                              - The response code configuration when the specified error codes would normally occur.
+                              - If not defined, the response code from the redirected URI is used.
+                              - If defined, this must be either `=` or `=XXX` with XXX being a response code.
+                              - If set to `=`, the original response code is retained.
+                              - If set to `=XXX`, the response code is replaced with `XXX`.
                               - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                           uri:
-                            type: path
+                            type: str
                             required: true
                             description:
                               - The URI of the error page.
+                              - Alternatively, this can be set to `@` followed by the name of a location block to reference it.
                               - https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
                       limit_rate:
                         type: str
@@ -9269,6 +9322,12 @@ argument_specs:
                     description:
                       - Whether to warn about uninitialized variables.
                       - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#uninitialized_variable_warn
+                  break:
+                    type: bool
+                    required: false
+                    description:
+                      - Whether to break rewrite processing.
+                      - https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#break
                   return:
                     type: dict
                     required: false
@@ -9349,59 +9408,6 @@ argument_specs:
                     elements: str
                     description:
                       - The list of custom directives to include in the configuration.
-          map:
-            type: list
-            required: false
-            default: []
-            elements: dict
-            description:
-              - The map configuration.
-              - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-            options:
-              string:
-                type: str
-                required: true
-                description:
-                  - The variable from which to map.
-                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-              variable:
-                type: str
-                required: false
-                description:
-                  - The varaible to which to map.
-                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-              hostnames:
-                type: bool
-                required: false
-                description:
-                  - Whether to map hostnames.
-                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-              volatile:
-                type: bool
-                required: false
-                description:
-                  - Whether the map is volatile.
-                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-              content:
-                type: list
-                required: false
-                elements: dict
-                description:
-                  - The list of map content.
-                  - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-                options:
-                  match:
-                    type: str
-                    required: true
-                    description:
-                      - The key to map.
-                      - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
-                  value:
-                    type: str
-                    required: true
-                    description:
-                      - The value to map.
-                      - https://nginx.org/en/docs/http/ngx_http_map_module.html#map
           split_clients:
             type: list
             required: false
@@ -9411,6 +9417,18 @@ argument_specs:
               - The split clients configuration.
               - https://nginx.org/en/docs/http/ngx_http_split_clients_module.html#split_clients
             options:
+              string:
+                type: str
+                required: true
+                description:
+                  - The string to split.
+                  - https://nginx.org/en/docs/http/ngx_http_split_clients_module.html#split_clients
+              variable:
+                type: str
+                required: true
+                description:
+                  - The variable to use for splitting.
+                  - https://nginx.org/en/docs/http/ngx_http_split_clients_module.html#split_clients
               contents:
                 type: list
                 required: true
@@ -9423,13 +9441,14 @@ argument_specs:
                     type: str
                     required: true
                     description:
-                      - The percentage of clients.
+                      - The percentage of clients to which the value is assigned.
+                      - The last percentage can be set to `*` to assign the value to all remaining clients.
                       - https://nginx.org/en/docs/http/ngx_http_split_clients_module.html#split_clients
                   value:
                     type: str
                     required: true
                     description:
-                      - The value for the clients.
+                      - The value to be assigned.
                       - https://nginx.org/en/docs/http/ngx_http_split_clients_module.html#split_clients
               custom_directives:
                 type: list
@@ -9438,2511 +9457,166 @@ argument_specs:
                 elements: str
                 description:
                   - The list of custom directives to include in the configuration.
-      nginx_mail_config_files:
-        type: list
-        required: false
-        default: []
-        elements: dict
-        description:
-          - The list of mail configuration files.
-        options:
-          destination:
-            type: path
-            required: true
-            description:
-              - The path to the configuration file.
-          error_log:
+          upstream:
             type: list
             required: false
-            default: []
             elements: dict
             description:
-              - The list of error log configurations.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#error_log
+              - The list of upstream blocks.
+              - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream
             options:
-              file:
-                type: path
+              name:
+                type: str
                 required: true
                 description:
-                  - The path to the error log file.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#error_log
-              level:
-                type: str
-                required: false
-                choices:
-                  - debug
-                  - info
-                  - notice
-                  - warn
-                  - error
-                  - crit
-                  - alert
-                  - emerg
-                description:
-                  - The log level for the error log.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#error_log
-          max_errors:
-            type: int
-            required: false
-            description:
-              - The maximum number of errors to log.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#max_errors
-          resolver:
-            type: dict
-            required: false
-            description:
-              - The resolver configuration.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-            options:
-              'off':
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to disable the resolver.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-              resolvers:
+                  - The name of the upstream block.
+              server:
                 type: list
                 required: false
                 default: []
                 elements: dict
                 description:
-                  - The list of resolver addresses.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
+                  - The list of server declarations.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
                 options:
-                  addresses:
-                    type: list
-                    required: true
-                    elements: str
-                    description:
-                      - The list of resolver addresses.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                  valid:
+                  address:
                     type: str
-                    required: false
-                    description:
-                      - The time period to consider a resolver address valid.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                  ipv4:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to resolve IPv4 addresses.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                  ipv6:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to resolve IPv6 addresses.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                  status_zone:
-                    type: str
-                    required: false
-                    description:
-                      - The shared memory zone for resolver status.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-          resolver_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for a resolver response.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver_timeout
-          server_name:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The server name.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#server_name
-          timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for a client response.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#timeout
-          auth_http:
-            type: str
-            required: false
-            description:
-              - The URI to request authentication.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http
-          auth_http_header:
-            type: list
-            required: false
-            default: []
-            elements: dict
-            description:
-              - The list of headers to include in the authentication request.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header
-            options:
-              header:
-                type: str
-                required: true
-                description:
-                  - The header to include in the authentication request.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header
-              value:
-                type: str
-                required: true
-                description:
-                  - The value to include in the authentication request.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header
-          auth_http_pass_client_cert:
-            type: bool
-            required: false
-            description:
-              - Whether to pass the client certificate to the authentication request.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_pass_client_cert
-          auth_http_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for an authentication response.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_timeout
-          proxy_buffer:
-            type: str
-            required: false
-            description:
-              - The buffer size for the proxy.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_buffer
-          proxy_pass_error_message:
-            type: bool
-            required: false
-            description:
-              - Whether to pass the error message to the client.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_pass_error_message
-          proxy_protocol:
-            type: bool
-            required: false
-            description:
-              - Whether to enable the PROXY protocol.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_protocol
-          proxy_smtp_auth:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SMTP authentication.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_smtp_auth
-          proxy_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for a proxy response.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_timeout
-          xclient:
-            type: bool
-            required: false
-            description:
-              - Whether to enable the XCLIENT protocol.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#xclient
-          set_real_ip_from:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of IP addresses or CIDR blocks from which to set the real IP.
-              - https://nginx.org/en/docs/mail/ngx_mail_realip_module.html#set_real_ip_from
-          ssl_certificate:
-            type: list
-            required: false
-            default: []
-            elements: path
-            description:
-              - The list of SSL certificates.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_certificate
-          ssl_certificate_key:
-            type: list
-            required: false
-            default: []
-            elements: path
-            description:
-              - The list of SSL certificate keys.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_certificate_key
-          ssl_ciphers:
-            type: str
-            required: false
-            description:
-              - The SSL ciphers to use.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_ciphers
-          ssl_client_certificate:
-            type: path
-            required: false
-            description:
-              - The path to the SSL client certificate.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_client_certificate
-          ssl_conf_command:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of SSL configuration commands.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_conf_command
-          ssl_crl:
-            type: path
-            required: false
-            description:
-              - The path to the SSL certificate revocation list.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_crl
-          ssl_dhparam:
-            type: path
-            required: false
-            description:
-              - The path to the SSL Diffie-Hellman parameter file.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_dhparam
-          ssl_early_data:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SSL early data for TLS 1.3.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_early_data
-          ssl_ecdh_curve:
-            type: str
-            required: false
-            description:
-              - The SSL elliptic curve to use.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_ecdh_curve
-          ssl_password_file:
-            type: path
-            required: false
-            description:
-              - The path to the SSL password file.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_password_file
-          ssl_prefer_server_ciphers:
-            type: bool
-            required: false
-            description:
-              - Whether to prefer server ciphers.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_prefer_server_ciphers
-          ssl_protocols:
-            type: dict
-            required: false
-            description:
-              - The SSL protocols to use.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-            options:
-              sslv2:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSLv2.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-              sslv3:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSLv3.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-              tlsv1:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable TLSv1.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-              tlsv11:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable TLSv1.1.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-              tlsv12:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable TLSv1.2.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-              tlsv13:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable TLSv1.3.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-          ssl_session_cache:
-            type: dict
-            required: false
-            description:
-              - The SSL session cache configuration.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-            options:
-              'off':
-                type: bool
-                required: false
-                description:
-                  - Whether to disable the session cache.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-              none:
-                type: bool
-                required: false
-                description:
-                  - Whether to disable the session cache.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-              builtin:
-                type: dict
-                required: false
-                description:
-                  - The built-in session cache.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                options:
-                  size:
-                    type: str
-                    required: false
-                    description:
-                      - The size of the session cache.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-              shared:
-                type: dict
-                required: false
-                description:
-                  - The shared memory zone for the session cache.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                options:
-                  name:
-                    type: str
-                    required: false
-                    description:
-                      - The name for the shared memory zone.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                  size:
-                    type: str
-                    required: false
-                    description:
-                      - The size of the session cache.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-          ssl_session_ticket_key:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of SSL session ticket keys.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_ticket_key
-          ssl_session_tickets:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SSL session tickets.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_tickets
-          ssl_session_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to keep an SSL session.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_timeout
-          ssl_trusted_certificate:
-            type: path
-            required: false
-            description:
-              - The path to the SSL trusted certificate.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_trusted_certificate
-          ssl_verify_client:
-            type: str
-            required: false
-            choices:
-              - 'off'
-              - 'on'
-              - optional
-              - optional_no_ca
-            description:
-              - The SSL client verification level.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_verify_client
-          ssl_verify_depth:
-            type: int
-            required: false
-            description:
-              - The maximum depth of the SSL certificate chain.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_verify_depth
-          starttls:
-            type: str
-            required: false
-            choices:
-              - 'off'
-              - 'on'
-              - 'only'
-            description:
-              - The STARTTLS configuration.
-              - If set to `only`, STARTTLS is required.
-              - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#starttls
-          imap_auth:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of authentication mechanisms for IMAP.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#imap_auth
-          imap_capabilities:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of IMAP capabilities.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#imap_capabilities
-          imap_client_buffer:
-            type: str
-            required: false
-            description:
-              - The buffer size for the IMAP client.
-              - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#imap_client_buffer
-          pop3_auth:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of authentication mechanisms for POP3.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#pop3_auth
-          pop3_capabilities:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of POP3 capabilities.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#pop3_capabilities
-          smtp_auth:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of authentication mechanisms for SMTP.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#smtp_auth
-          smtp_capabilities:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of SMTP capabilities.
-              - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#smtp_capabilities
-          custom_directives:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of custom directives to include in the configuration.
-          server:
-            type: list
-            required: false
-            default: []
-            elements: dict
-            description:
-              - The list of mail servers.
-              - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#server
-            options:
-              error_log:
-                type: list
-                required: false
-                default: []
-                elements: dict
-                description:
-                  - The list of error log configurations.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#error_log
-                options:
-                  file:
-                    type: path
                     required: true
                     description:
-                      - The path to the error log file.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#error_log
-                  level:
+                      - The address of the server.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+                  weight:
+                    type: int
+                    required: false
+                    description:
+                      - The weight of the server.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+                  max_conns:
+                    type: int
+                    required: false
+                    description:
+                      - The maximum number of connections to the server.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+                  max_fails:
+                    type: int
+                    required: false
+                    description:
+                      - The number of failed attempts within the fail_timeout period before the server is considered failed.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+                  fail_timeout:
                     type: str
                     required: false
-                    choices:
-                      - debug
-                      - info
-                      - notice
-                      - warn
-                      - error
-                      - crit
-                      - alert
-                      - emerg
                     description:
-                      - The log level for the error log.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#error_log
-              max_errors:
-                type: int
-                required: false
-                description:
-                  - The maximum number of errors to log.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#max_errors
-              resolver:
-                type: dict
-                required: false
-                description:
-                  - The resolver configuration.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                options:
-                  'off':
+                      - The time period over which to evaluation the server for failure.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+                  backup:
                     type: bool
                     required: false
                     default: false
                     description:
-                      - Whether to disable the resolver.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                  resolvers:
-                    type: list
+                      - Whether the server is a backup server.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+                  down:
+                    type: bool
                     required: false
-                    default: []
-                    elements: dict
+                    default: false
                     description:
-                      - The list of resolver addresses.
-                      - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                    options:
-                      addresses:
-                        type: list
-                        required: true
-                        elements: str
-                        description:
-                          - The list of resolver addresses.
-                          - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                      valid:
-                        type: str
-                        required: false
-                        description:
-                          - The time period to consider a resolver address valid.
-                          - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                      ipv4:
-                        type: bool
-                        required: false
-                        description:
-                          - Whether to resolve IPv4 addresses.
-                          - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                      ipv6:
-                        type: bool
-                        required: false
-                        description:
-                          - Whether to resolve IPv6 addresses.
-                          - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-                      status_zone:
-                        type: str
-                        required: false
-                        description:
-                          - The shared memory zone for resolver status.
-                          - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver
-              resolver_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for a resolver response.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#resolver_timeout
-              server_name:
-                type: str
-                required: false
-                description:
-                  - The server name.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#server_name
-              timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for a client response.
-                  - https://nginx.org/en/docs/mail/ngx_mail_core_module.html#timeout
-              auth_http:
-                type: str
-                required: false
-                description:
-                  - The URI to request authentication.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http
-              auth_http_header:
-                type: list
-                required: false
-                default: []
-                elements: dict
-                description:
-                  - The list of headers to include in the authentication request.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header
-                options:
-                  header:
-                    type: str
-                    required: true
-                    description:
-                      - The header to include in the authentication request.
-                      - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header
-                  value:
-                    type: str
-                    required: true
-                    description:
-                      - The value to include in the authentication request.
-                      - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_header
-              auth_http_pass_client_cert:
-                type: bool
-                required: false
-                description:
-                  - Whether to pass the client certificate to the authentication request.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_pass_client_cert
-              auth_http_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for an authentication response.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#auth_http_timeout
-              proxy_buffer:
-                type: str
-                required: false
-                description:
-                  - The buffer size for the proxy.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_buffer
-              proxy_pass_error_message:
-                type: bool
-                required: false
-                description:
-                  - Whether to pass the error message to the client.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_pass_error_message
-              proxy_protocol:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable the PROXY protocol.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_protocol
-              proxy_smtp_auth:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SMTP authentication.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_smtp_auth
-              proxy_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for a proxy response.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#proxy_timeout
-              xclient:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable the XCLIENT protocol.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#xclient
-              set_real_ip_from:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of IP addresses or CIDR blocks from which to set the real IP.
-                  - https://nginx.org/en/docs/mail/ngx_mail_realip_module.html#set_real_ip_from
-              ssl_certificate:
-                type: list
-                required: false
-                default: []
-                elements: path
-                description:
-                  - The list of SSL certificates.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_certificate
-              ssl_certificate_key:
-                type: list
-                required: false
-                default: []
-                elements: path
-                description:
-                  - The list of SSL certificate keys.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_certificate_key
-              ssl_ciphers:
-                type: str
-                required: false
-                description:
-                  - The SSL ciphers to use.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_ciphers
-              ssl_client_certificate:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL client certificate.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_client_certificate
-              ssl_conf_command:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of SSL configuration commands.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_conf_command
-              ssl_crl:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL certificate revocation list.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_crl
-              ssl_dhparam:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL Diffie-Hellman parameter file.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_dhparam
-              ssl_early_data:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSL early data for TLS 1.3.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_early_data
-              ssl_ecdh_curve:
-                type: str
-                required: false
-                description:
-                  - The SSL elliptic curve to use.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_ecdh_curve
-              ssl_password_file:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL password file.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_password_file
-              ssl_prefer_server_ciphers:
-                type: bool
-                required: false
-                description:
-                  - Whether to prefer server ciphers.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_prefer_server_ciphers
-              ssl_protocols:
+                      - Whether the server is initially considered down.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#server
+              zone:
                 type: dict
                 required: false
                 description:
-                  - The SSL protocols to use.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-                options:
-                  sslv2:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable SSLv2.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-                  sslv3:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable SSLv3.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-                  tlsv1:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable TLSv1.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-                  tlsv11:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable TLSv1.1.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-                  tlsv12:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable TLSv1.2.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-                  tlsv13:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable TLSv1.3.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_protocols
-              ssl_session_cache:
-                type: dict
-                required: false
-                description:
-                  - The SSL session cache configuration.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                options:
-                  'off':
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to disable the session cache.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                  none:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to disable the session cache.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                  builtin:
-                    type: dict
-                    required: false
-                    description:
-                      - The built-in session cache.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                    options:
-                      size:
-                        type: str
-                        required: false
-                        description:
-                          - The size of the session cache.
-                          - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                  shared:
-                    type: dict
-                    required: false
-                    description:
-                      - The shared memory zone for the session cache.
-                      - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                    options:
-                      name:
-                        type: str
-                        required: false
-                        description:
-                          - The name for the shared memory zone.
-                          - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-                      size:
-                        type: str
-                        required: false
-                        description:
-                          - The size of the session cache.
-                          - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_cache
-              ssl_session_ticket_key:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of SSL session ticket keys.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_ticket_key
-              ssl_session_tickets:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSL session tickets.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_tickets
-              ssl_session_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to keep an SSL session.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_session_timeout
-              ssl_trusted_certificate:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL trusted certificate.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_trusted_certificate
-              ssl_verify_client:
-                type: str
-                required: false
-                choices:
-                  - 'off'
-                  - 'on'
-                  - optional
-                  - optional_no_ca
-                description:
-                  - The SSL client verification level.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_verify_client
-              ssl_verify_depth:
-                type: int
-                required: false
-                description:
-                  - The maximum depth of the SSL certificate chain.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#ssl_verify_depth
-              starttls:
-                type: str
-                required: false
-                choices:
-                  - 'off'
-                  - 'on'
-                  - 'only'
-                description:
-                  - The STARTTLS configuration.
-                  - If set to `only`, STARTTLS is required.
-                  - https://nginx.org/en/docs/mail/ngx_mail_ssl_module.html#starttls
-              imap_auth:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of authentication mechanisms for IMAP.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#imap_auth
-              imap_capabilities:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of IMAP capabilities.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#imap_capabilities
-              imap_client_buffer:
-                type: str
-                required: false
-                description:
-                  - The buffer size for the IMAP client.
-                  - https://nginx.org/en/docs/mail/ngx_mail_proxy_module.html#imap_client_buffer
-              pop3_auth:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of authentication mechanisms for POP3.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#pop3_auth
-              pop3_capabilities:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of POP3 capabilities.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#pop3_capabilities
-              smtp_auth:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of authentication mechanisms for SMTP.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#smtp_auth
-              smtp_capabilities:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of SMTP capabilities.
-                  - https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html#smtp_capabilities
-              custom_directives:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of custom directives to include in the configuration.
-      nginx_stream_config_files:
-        type: list
-        required: false
-        default: []
-        elements: dict
-        description:
-          - The list of stream configuration files.
-        options:
-          destination:
-            type: path
-            required: true
-            description:
-              - The path to the configuration file.
-          preread_buffer_size:
-            type: str
-            required: false
-            description:
-              - The buffer size for the preread module.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#preread_buffer_size
-          preread_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for the preread module.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#preread_timeout
-          proxy_protocol_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for the PROXY protocol.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_protocol_timeout
-          resolver:
-            type: dict
-            required: false
-            description:
-              - The resolver configuration.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-            options:
-              addresses:
-                type: list
-                required: true
-                elements: str
-                description:
-                  - The list of resolver addresses.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-              valid:
-                type: str
-                required: false
-                description:
-                  - The time period to consider a resolver address valid.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-              ipv4:
-                type: bool
-                required: false
-                description:
-                  - Whether to resolve IPv4 addresses.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-              ipv6:
-                type: bool
-                required: false
-                description:
-                  - Whether to resolve IPv6 addresses.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-              status_zone:
-                type: str
-                required: false
-                description:
-                  - The shared memory zone for resolver status.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-          resolver_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for a resolver response.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver_timeout
-          tcp_nodelay:
-            type: bool
-            required: false
-            description:
-              - Whether to enable TCP no delay.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#tcp_nodelay
-          server_names_hash_bucket_size:
-            type: int
-            required: false
-            description:
-              - The size of the server names hash bucket.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#server_names_hash_bucket_size
-          server_names_hash_max_size:
-            type: int
-            required: false
-            description:
-              - The maximum size of the server names hash.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#server_names_hash_max_size
-          variables_hash_bucket_size:
-            type: int
-            required: false
-            description:
-              - The size of the variables hash bucket.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#variables_hash_bucket_size
-          variables_hash_max_size:
-            type: int
-            required: false
-            description:
-              - The maximum size of the variables hash.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#variables_hash_max_size
-          ssl_alpn:
-            type: list
-            required: false
-            elements: str
-            description:
-              - The list of SSL application layer protocols.
-              - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_alpn
-          ssl_certificate:
-            type: list
-            required: false
-            default: []
-            elements: path
-            description:
-              - The list of SSL certificates.
-              - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_certificate
-          ssl_certificate_key:
-            type: list
-            required: false
-            default: []
-            elements: path
-            description:
-              - The list of SSL certificate keys.
-              - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_certificate_key
-          ssl_ciphers:
-            type: str
-            required: false
-            description:
-              - The SSL ciphers to use.
-              - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_ciphers
-          ssl_conf_command:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of SSL configuration commands.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_conf_command
-          ssl_crl:
-            type: path
-            required: false
-            description:
-              - The path to the SSL certificate revocation list.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_crl
-          ssl_dhparam:
-            type: path
-            required: false
-            description:
-              - The path to the SSL Diffie-Hellman parameter file.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_dhparam
-          ssl_ecdh_curve:
-            type: str
-            required: false
-            description:
-              - The SSL ECDH curve configuration.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_ecdh_curve
-          ssl_password_file:
-            type: path
-            required: false
-            description:
-              - The path to the SSL password file.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_password_file
-          ssl_prefer_server_ciphers:
-            type: bool
-            required: false
-            description:
-              - Whether to prefer server ciphers.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_prefer_server_ciphers
-          ssl_protocols:
-            type: dict
-            required: false
-            description:
-              - The SSL protocols configuration.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-            options:
-              sslv2:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable SSLv2.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-              sslv3:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable SSLv3.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-              tlsv1:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-              tlsv11:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.1.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-              tlsv12:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.2.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-              tlsv13:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.3.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-          ssl_reject_handshake:
-            type: bool
-            required: false
-            description:
-              - Whether to reject SSL handshakes for unknown server names.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_reject_handshake
-          ssl_session_cache:
-            type: dict
-            required: false
-            description:
-              - The SSL session cache configuration.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-            options:
-              'off':
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to disable the SSL session cache.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-              none:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to allow session reuse and disable other the SSL session cache.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-              builtin:
-                type: dict
-                required: false
-                description:
-                  - The built-in SSL session cache configuration.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                options:
-                  size:
-                    type: str
-                    required: true
-                    description:
-                      - The size of the built-in SSL session cache.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-              shared:
-                type: dict
-                required: false
-                description:
-                  - The shared memory zone for the SSL session cache.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
+                  - The shared memory zone for the upstream block.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#zone
                 options:
                   name:
                     type: str
                     required: true
                     description:
                       - The name of the shared memory zone.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#zone
                   size:
                     type: str
-                    required: true
+                    required: false
                     description:
                       - The size of the shared memory zone.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-          ssl_session_ticket_key:
-            type: list
-            required: false
-            default: []
-            elements: path
-            description:
-              - The list of SSL session ticket keys.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_ticket_key
-          ssl_session_tickets:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SSL session tickets.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_tickets
-          ssl_session_timeout:
-            type: str
-            required: false
-            description:
-              - The timeout for SSL sessions.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_timeout
-          ssl_trusted_certificate:
-            type: path
-            required: false
-            description:
-              - The path to the SSL trusted certificate.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_trusted_certificate
-          ssl_verify_client:
-            type: str
-            required: false
-            choices:
-              - 'off'
-              - 'on'
-              - optional
-              - optional_no_ca
-            description:
-              - The SSL client verification configuration.
-              - If set to `off`, disables SSL client verification.
-              - If set to `on`, enables SSL client verification.
-              - If set to `optional`, enables SSL client verification, but does not require a client certificate.
-              - If set to `optional_no_ca`, enables SSL client verification, but does not require a client certificate and does not verify the certificate.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_verify_client
-          ssl_verify_depth:
-            type: int
-            required: false
-            description:
-              - The maximum depth of the SSL certificate verification chain.
-              - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_verify_depth
-          proxy_bind:
-            type: dict
-            required: false
-            description:
-              - The proxy bind configuration.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-            options:
-              'off':
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to disable the proxy bind.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-              address:
-                type: str
-                required: false
-                description:
-                  - The address to bind the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-              transparent:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable transparent proxying.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-          proxy_buffer_size:
-            type: str
-            required: false
-            description:
-              - The buffer size for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_buffer_size
-          proxy_connect_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for a proxy connection.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_connect_timeout
-          proxy_download_rate:
-            type: str
-            required: false
-            description:
-              - The download rate for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_download_rate
-          proxy_half_close:
-            type: bool
-            required: false
-            description:
-              - Whether to enable half-closed connections.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_half_close
-          proxy_next_upstream:
-            type: bool
-            required: false
-            description:
-              - Whether to enable the next upstream proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream
-          proxy_next_upstream_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for the next upstream proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_timeout
-          proxy_next_upstream_tries:
-            type: int
-            required: false
-            description:
-              - The number of tries for the next upstream proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_tries
-          proxy_protocol:
-            type: bool
-            required: false
-            description:
-              - Whether to enable the PROXY protocol.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_protocol
-          proxy_responses:
-            type: int
-            required: false
-            description:
-              - The number of responses for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_responses
-          proxy_session_drop:
-            type: bool
-            required: false
-            description:
-              - Whether to drop the proxy session.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_session_drop
-          proxy_socket_keepalive:
-            type: bool
-            required: false
-            description:
-              - Whether to enable socket keepalive for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_socket_keepalive
-          proxy_ssl:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SSL for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl
-          proxy_ssl_certificate:
-            type: path
-            required: false
-            description:
-              - The path to the proxy SSL certificate.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_certificate
-          proxy_ssl_certificate_key:
-            type: path
-            required: false
-            description:
-              - The path to the proxy SSL certificate key.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_certificate_key
-          proxy_ssl_ciphers:
-            type: str
-            required: false
-            description:
-              - The proxy SSL ciphers to use.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_ciphers
-          proxy_ssl_conf_command:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of proxy SSL configuration commands.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_conf_command
-          proxy_ssl_crl:
-            type: path
-            required: false
-            description:
-              - The path to the proxy SSL certificate revocation list.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_crl
-          proxy_ssl_name:
-            type: str
-            required: false
-            description:
-              - The proxy SSL name.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_name
-          proxy_ssl_password_file:
-            type: path
-            required: false
-            description:
-              - The path to the proxy SSL password file.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_password_file
-          proxy_ssl_protocols:
-            type: dict
-            required: false
-            description:
-              - The proxy SSL protocols configuration.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-            options:
-              sslv2:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable SSLv2.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-              sslv3:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable SSLv3.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-              tlsv1:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-              tlsv11:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.1.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-              tlsv12:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.2.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-              tlsv13:
-                type: bool
-                required: false
-                default: false
-                description:
-                  - Whether to enable TLSv1.3.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-          proxy_ssl_server_name:
-            type: bool
-            required: false
-            description:
-              - Whether to enable the proxy SSL Server Name Indication (SNI).
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_server_name
-          proxy_ssl_session_reuse:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SSL session reuse for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_session_reuse
-          proxy_ssl_trusted_certificate:
-            type: path
-            required: false
-            description:
-              - The path to the proxy SSL trusted certificate.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_trusted_certificate
-          proxy_ssl_verify:
-            type: bool
-            required: false
-            description:
-              - Whether to enable SSL verification for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_verify
-          proxy_ssl_verify_depth:
-            type: int
-            required: false
-            description:
-              - The maximum depth of the proxy SSL certificate verification chain.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_verify_depth
-          proxy_timeout:
-            type: str
-            required: false
-            description:
-              - The time period to wait for a proxy response.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout
-          proxy_upload_rate:
-            type: str
-            required: false
-            description:
-              - The upload rate for the proxy.
-              - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_upload_rate
-          error_log:
-            type: list
-            required: false
-            default: []
-            elements: dict
-            description:
-              - The path to the error log.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#error_log
-            options:
-              file:
-                type: path
-                required: true
-                description:
-                  - The path to the error log file.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#error_log
-              level:
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#zone
+              load_balancing_method:
                 type: str
                 required: false
                 choices:
-                  - debug
-                  - info
-                  - notice
-                  - warn
-                  - error
-                  - crit
-                  - alert
-                  - emerg
+                  - hash
+                  - ip_hash
+                  - least_conn
+                  - random
                 description:
-                  - The log level for the error log.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#error_log
-          access_log:
-            type: dict
-            required: false
-            description:
-              - The access log configuration.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-            options:
-              'off':
-                type: bool
+                  - The load balancing method for the upstream block.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#least_conn
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
+              hash:
+                type: dict
                 required: false
                 description:
-                  - Whether to disable the access log.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-              logs:
-                type: list
-                required: false
-                elements: dict
-                description:
-                  - The list of access logs.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
+                  - The hash key for the upstream block.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
                 options:
-                  path:
-                    type: path
+                  key:
+                    type: str
                     required: true
                     description:
-                      - The path to the access log file.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                  format:
-                    type: str
+                      - The key for the hash.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
+                  consistent:
+                    type: bool
                     required: false
+                    default: false
                     description:
-                      - The log format.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                  buffer:
-                    type: str
-                    required: false
-                    description:
-                      - The buffer size for the access log.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                  gzip:
+                      - Whether the hash is consistent.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#hash
+              random:
+                type: dict
+                required: false
+                description:
+                  - The random choice method for the upstream block.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
+                options:
+                  two:
                     type: dict
                     required: false
                     description:
-                      - The access log gzip configuration.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
+                      - If defined, two random choices are made.
+                      - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
                     options:
-                      level:
-                        type: int
+                      method:
+                        type: str
                         required: false
                         description:
-                          - The gzip compression level.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                  flush:
-                    type: str
-                    required: false
-                    description:
-                      - The time period to flush the access log.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                  if:
-                    type: str
-                    required: false
-                    description:
-                      - The condition to enable the access log.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-          open_log_file_cache:
-            type: dict
-            required: false
-            description:
-              - The open log file cache configuration.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-            options:
-              'off':
-                type: bool
-                required: false
-                description:
-                  - Whether to disable the open log file cache.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-              max:
+                          - The method for deciding between the two random choices.
+                          - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#random
+              keepalive:
                 type: int
                 required: false
                 description:
-                  - The maximum number of open log files.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-              inactive:
-                type: str
-                required: false
-                description:
-                  - The time period to keep an open log file.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-              min_uses:
+                  - The maximum number of idle keepalive connections to keep open.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
+              keepalive_requests:
                 type: int
                 required: false
                 description:
-                  - The minimum number of uses for an open log file.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-              valid:
+                  - The maximum number of requests to allow on a keepalive connection.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_requests
+              keepalive_time:
                 type: str
                 required: false
                 description:
-                  - The time period to consider an open log file valid.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-          log_format:
-            type: list
-            required: false
-            default: []
-            elements: dict
-            description:
-              - The list of log formats.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#log_format
-            options:
-              name:
-                type: str
-                required: true
-                description:
-                  - The name of the log format.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#log_format
-              escape:
-                type: str
-                required: false
-                choices:
-                  - default
-                  - json
-                  - none
-                description:
-                  - The escape character for the log format.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#log_format
-              format:
-                type: str
-                required: true
-                description:
-                  - The log format.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#log_format
-          custom_directives:
-            type: list
-            required: false
-            default: []
-            elements: str
-            description:
-              - The list of custom directives to include in the configuration.
-          server:
-            type: list
-            required: false
-            default: []
-            elements: dict
-            description:
-              - The list of stream servers.
-              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#server
-            options:
-              preread_buffer_size:
+                  - The time period over which to keep a keepalive connection open.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_time
+              keepalive_timeout:
                 type: str
                 required: false
                 description:
-                  - The buffer size for the preread module.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#preread_buffer_size
-              preread_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for the preread module.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#preread_timeout
-              proxy_protocol_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for the PROXY protocol.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_protocol_timeout
-              resolver:
-                type: dict
-                required: false
-                description:
-                  - The resolver configuration.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-                options:
-                  addresses:
-                    type: list
-                    required: true
-                    elements: str
-                    description:
-                      - The list of resolver addresses.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-                  valid:
-                    type: str
-                    required: false
-                    description:
-                      - The time period to consider a resolver address valid.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-                  ipv4:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to resolve IPv4 addresses.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-                  ipv6:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to resolve IPv6 addresses.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-                  status_zone:
-                    type: str
-                    required: false
-                    description:
-                      - The shared memory zone for resolver status.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver
-              resolver_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for a resolver response.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#resolver_timeout
-              tcp_nodelay:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable TCP no delay.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#tcp_nodelay
-              listen:
-                type: list
-                required: false
-                default: []
-                elements: dict
-                description:
-                  - The list of listen directives.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                options:
-                  address:
-                    type: str
-                    required: false
-                    description:
-                      - The address to listen on.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  port:
-                    type: int
-                    required: false
-                    description:
-                      - The port to listen on.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  default_server:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to set the server as the default server.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  ssl:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable SSL.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  proxy_protocol:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable the PROXY protocol.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  setfib:
-                    type: int
-                    required: false
-                    description:
-                      - The setfib value.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  fastopen:
-                    type: int
-                    required: false
-                    description:
-                      - The fastopen value.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  backlog:
-                    type: int
-                    required: false
-                    description:
-                      - The listen backlog.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  rcvbuf:
-                    type: str
-                    required: false
-                    description:
-                      - The receive buffer size.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  sndbuf:
-                    type: str
-                    required: false
-                    description:
-                      - The send buffer size.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  accept_filter:
-                    type: str
-                    required: false
-                    description:
-                      - The accept filter.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  deferred:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable deferred accept.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  bind:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to bind the address.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  ipv6only:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable IPv6 only.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  reuseport:
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to enable reuseport.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                  so_keepalive:
-                    type: dict
-                    required: false
-                    description:
-                      - The SO_KEEPALIVE configuration.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                    options:
-                      'on':
-                        type: bool
-                        required: false
-                        default: false
-                        description:
-                          - Whether to enable SO_KEEPALIVE.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                      'off':
-                        type: bool
-                        required: false
-                        default: false
-                        description:
-                          - Whether to disable SO_KEEPALIVE.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                      keepidle:
-                        type: str
-                        required: false
-                        description:
-                          - The keepalive idle time.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                      keepintvl:
-                        type: str
-                        required: false
-                        description:
-                          - The keepalive interval.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-                      keepcnt:
-                        type: int
-                        required: false
-                        description:
-                          - The keepalive count.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#listen
-              server_name:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of server names.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#server_name
-              ssl_alpn:
-                type: list
-                required: false
-                elements: str
-                description:
-                  - The list of SSL application layer protocols.
-                  - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_alpn
-              ssl_certificate:
-                type: list
-                required: false
-                default: []
-                elements: path
-                description:
-                  - The list of SSL certificates.
-                  - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_certificate
-              ssl_certificate_key:
-                type: list
-                required: false
-                default: []
-                elements: path
-                description:
-                  - The list of SSL certificate keys.
-                  - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_certificate_key
-              ssl_ciphers:
-                type: str
-                required: false
-                description:
-                  - The SSL ciphers to use.
-                  - https://nginx.org/en/docs/stream/ngx_stream_ssl_module.html#ssl_ciphers
-              ssl_conf_command:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of SSL configuration commands.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_conf_command
-              ssl_crl:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL certificate revocation list.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_crl
-              ssl_dhparam:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL Diffie-Hellman parameter file.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_dhparam
-              ssl_ecdh_curve:
-                type: str
-                required: false
-                description:
-                  - The SSL ECDH curve configuration.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_ecdh_curve
-              ssl_password_file:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL password file.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_password_file
-              ssl_prefer_server_ciphers:
-                type: bool
-                required: false
-                description:
-                  - Whether to prefer server ciphers.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_prefer_server_ciphers
-              ssl_protocols:
-                type: dict
-                required: false
-                description:
-                  - The SSL protocols configuration.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-                options:
-                  sslv2:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable SSLv2.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-                  sslv3:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable SSLv3.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-                  tlsv1:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-                  tlsv11:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.1.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-                  tlsv12:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.2.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-                  tlsv13:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.3.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_protocols
-              ssl_reject_handshake:
-                type: bool
-                required: false
-                description:
-                  - Whether to reject SSL handshakes for unknown server names.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_reject_handshake
-              ssl_session_cache:
-                type: dict
-                required: false
-                description:
-                  - The SSL session cache configuration.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                options:
-                  'off':
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to disable the SSL session cache.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                  none:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to allow session reuse and disable other the SSL session cache.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                  builtin:
-                    type: dict
-                    required: false
-                    description:
-                      - The built-in SSL session cache configuration.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                    options:
-                      size:
-                        type: str
-                        required: true
-                        description:
-                          - The size of the built-in SSL session cache.
-                          - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                  shared:
-                    type: dict
-                    required: false
-                    description:
-                      - The shared memory zone for the SSL session cache.
-                      - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                    options:
-                      name:
-                        type: str
-                        required: true
-                        description:
-                          - The name of the shared memory zone.
-                          - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-                      size:
-                        type: str
-                        required: true
-                        description:
-                          - The size of the shared memory zone.
-                          - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_cache
-              ssl_session_ticket_key:
-                type: list
-                required: false
-                default: []
-                elements: path
-                description:
-                  - The list of SSL session ticket keys.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_ticket_key
-              ssl_session_tickets:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSL session tickets.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_tickets
-              ssl_session_timeout:
-                type: str
-                required: false
-                description:
-                  - The timeout for SSL sessions.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_session_timeout
-              ssl_trusted_certificate:
-                type: path
-                required: false
-                description:
-                  - The path to the SSL trusted certificate.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_trusted_certificate
-              ssl_verify_client:
-                type: str
-                required: false
-                choices:
-                  - 'off'
-                  - 'on'
-                  - optional
-                  - optional_no_ca
-                description:
-                  - The SSL client verification configuration.
-                  - If set to `off`, disables SSL client verification.
-                  - If set to `on`, enables SSL client verification.
-                  - If set to `optional`, enables SSL client verification, but does not require a client certificate.
-                  - If set to `optional_no_ca`, enables SSL client verification, but does not require a client certificate and does not verify the certificate.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_verify_client
-              ssl_verify_depth:
-                type: int
-                required: false
-                description:
-                  - The maximum depth of the SSL certificate verification chain.
-                  - https://nginx.org/en/docs/http/ngx_stream_ssl_module.html#ssl_verify_depth
-              proxy_bind:
-                type: dict
-                required: false
-                description:
-                  - The proxy bind configuration.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-                options:
-                  'off':
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to disable the proxy bind.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-                  address:
-                    type: str
-                    required: false
-                    description:
-                      - The address to bind the proxy.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-                  transparent:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable transparent proxying.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_bind
-              proxy_buffer_size:
-                type: str
-                required: false
-                description:
-                  - The buffer size for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_buffer_size
-              proxy_connect_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for a proxy connection.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_connect_timeout
-              proxy_download_rate:
-                type: str
-                required: false
-                description:
-                  - The download rate for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_download_rate
-              proxy_half_close:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable half-closed connections.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_half_close
-              proxy_next_upstream:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable the next upstream proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream
-              proxy_next_upstream_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for the next upstream proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_timeout
-              proxy_next_upstream_tries:
-                type: int
-                required: false
-                description:
-                  - The number of tries for the next upstream proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_tries
-              proxy_protocol:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable the PROXY protocol.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_protocol
-              proxy_responses:
-                type: int
-                required: false
-                description:
-                  - The number of responses for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_responses
-              proxy_session_drop:
-                type: bool
-                required: false
-                description:
-                  - Whether to drop the proxy session.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_session_drop
-              proxy_socket_keepalive:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable socket keepalive for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_socket_keepalive
-              proxy_ssl:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSL for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl
-              proxy_ssl_certificate:
-                type: path
-                required: false
-                description:
-                  - The path to the proxy SSL certificate.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_certificate
-              proxy_ssl_certificate_key:
-                type: path
-                required: false
-                description:
-                  - The path to the proxy SSL certificate key.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_certificate_key
-              proxy_ssl_ciphers:
-                type: str
-                required: false
-                description:
-                  - The proxy SSL ciphers to use.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_ciphers
-              proxy_ssl_conf_command:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of proxy SSL configuration commands.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_conf_command
-              proxy_ssl_crl:
-                type: path
-                required: false
-                description:
-                  - The path to the proxy SSL certificate revocation list.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_crl
-              proxy_ssl_name:
-                type: str
-                required: false
-                description:
-                  - The proxy SSL name.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_name
-              proxy_ssl_password_file:
-                type: path
-                required: false
-                description:
-                  - The path to the proxy SSL password file.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_password_file
-              proxy_ssl_protocols:
-                type: dict
-                required: false
-                description:
-                  - The proxy SSL protocols configuration.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-                options:
-                  sslv2:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable SSLv2.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-                  sslv3:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable SSLv3.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-                  tlsv1:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-                  tlsv11:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.1.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-                  tlsv12:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.2.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-                  tlsv13:
-                    type: bool
-                    required: false
-                    default: false
-                    description:
-                      - Whether to enable TLSv1.3.
-                      - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_protocols
-              proxy_ssl_server_name:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable the proxy SSL Server Name Indication (SNI).
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_server_name
-              proxy_ssl_session_reuse:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSL session reuse for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_session_reuse
-              proxy_ssl_trusted_certificate:
-                type: path
-                required: false
-                description:
-                  - The path to the proxy SSL trusted certificate.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_trusted_certificate
-              proxy_ssl_verify:
-                type: bool
-                required: false
-                description:
-                  - Whether to enable SSL verification for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_verify
-              proxy_ssl_verify_depth:
-                type: int
-                required: false
-                description:
-                  - The maximum depth of the proxy SSL certificate verification chain.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_ssl_verify_depth
-              proxy_timeout:
-                type: str
-                required: false
-                description:
-                  - The time period to wait for a proxy response.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout
-              proxy_upload_rate:
-                type: str
-                required: false
-                description:
-                  - The upload rate for the proxy.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_upload_rate
-              proxy_pass:
-                type: str
-                required: false
-                description:
-                  - The proxy pass directive.
-                  - https://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_pass
-              error_log:
-                type: list
-                required: false
-                default: []
-                elements: dict
-                description:
-                  - The path to the error log.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#error_log
-                options:
-                  file:
-                    type: path
-                    required: true
-                    description:
-                      - The path to the error log file.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#error_log
-                  level:
-                    type: str
-                    required: false
-                    choices:
-                      - debug
-                      - info
-                      - notice
-                      - warn
-                      - error
-                      - crit
-                      - alert
-                      - emerg
-                    description:
-                      - The log level for the error log.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#error_log
-              access_log:
-                type: dict
-                required: false
-                description:
-                  - The access log configuration.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                options:
-                  'off':
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to disable the access log.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                  logs:
-                    type: list
-                    required: false
-                    elements: dict
-                    description:
-                      - The list of access logs.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                    options:
-                      path:
-                        type: path
-                        required: true
-                        description:
-                          - The path to the access log file.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                      format:
-                        type: str
-                        required: false
-                        description:
-                          - The log format.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                      buffer:
-                        type: str
-                        required: false
-                        description:
-                          - The buffer size for the access log.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                      gzip:
-                        type: dict
-                        required: false
-                        description:
-                          - The access log gzip configuration.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                        options:
-                          level:
-                            type: int
-                            required: false
-                            description:
-                              - The gzip compression level.
-                              - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                      flush:
-                        type: str
-                        required: false
-                        description:
-                          - The time period to flush the access log.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-                      if:
-                        type: str
-                        required: false
-                        description:
-                          - The condition to enable the access log.
-                          - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#access_log
-              open_log_file_cache:
-                type: dict
-                required: false
-                description:
-                  - The open log file cache configuration.
-                  - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-                options:
-                  'off':
-                    type: bool
-                    required: false
-                    description:
-                      - Whether to disable the open log file cache.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-                  max:
-                    type: int
-                    required: false
-                    description:
-                      - The maximum number of open log files.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-                  inactive:
-                    type: str
-                    required: false
-                    description:
-                      - The time period to keep an open log file.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-                  min_uses:
-                    type: int
-                    required: false
-                    description:
-                      - The minimum number of uses for an open log file.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-                  valid:
-                    type: str
-                    required: false
-                    description:
-                      - The time period to consider an open log file valid.
-                      - https://nginx.org/en/docs/stream/ngx_stream_core_module.html#open_log_file_cache
-              custom_directives:
-                type: list
-                required: false
-                default: []
-                elements: str
-                description:
-                  - The list of custom directives to include in the configuration.
+                  - The timeout for keepalive connections.
+                  - https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_timeout

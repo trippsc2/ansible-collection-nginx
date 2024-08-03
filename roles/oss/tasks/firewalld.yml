@@ -21,7 +21,7 @@
 
 - name: Allow additional TCP ports
   become: true
-  loop: "{{ nginx_firewall_tcp_ports }}"
+  loop: "{{ nginx_tcp_ports }}"
   ansible.posix.firewalld:
     port: "{{ item }}/tcp"
     state: enabled
@@ -30,7 +30,7 @@
 
 - name: Allow additional UDP ports
   become: true
-  loop: "{{ nginx_firewall_udp_ports }}"
+  loop: "{{ nginx_udp_ports }}"
   ansible.posix.firewalld:
     port: "{{ item }}/udp"
     state: enabled

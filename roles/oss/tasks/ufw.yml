@@ -21,7 +21,7 @@
 
 - name: Allow additional TCP ports
   become: true
-  loop: "{{ nginx_firewall_tcp_ports }}"
+  loop: "{{ nginx_tcp_ports }}"
   community.general.ufw:
     port: "{{ item }}"
     proto: tcp
@@ -30,7 +30,7 @@
 
 - name: Allow additional UDP ports
   become: true
-  loop: "{{ nginx_firewall_udp_ports }}"
+  loop: "{{ nginx_udp_ports }}"
   community.general.ufw:
     port: "{{ item }}"
     proto: udp

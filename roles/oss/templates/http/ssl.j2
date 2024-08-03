@@ -37,7 +37,7 @@ ssl_ocsp {{ data.ssl_ocsp }};
 {%- if data.ssl_ocsp_cache.off | default(false) %}
 ssl_ocsp_cache off;
 {% else %}
-ssl_ocsp_cache {{- 'shared:' + data.ssl_ocsp_cache.shared.name | string + ':' + data.ssl_ocsp_cache.shared.size | string -}};
+ssl_ocsp_cache {{ 'shared:' + data.ssl_ocsp_cache.shared.name | string + ':' + data.ssl_ocsp_cache.shared.size | string }};
 {% endif %}
 {% endif %}
 {%- if data.ssl_ocsp_responder is defined %}
@@ -57,11 +57,11 @@ ssl_prefer_server_ciphers {{ data.ssl_prefer_server_ciphers | ternary('on', 'off
        data.ssl_protocols.tlsv12 | default(false) or
        data.ssl_protocols.tlsv13 | default(false)) %}
 ssl_protocols{{ ' SSLv2' if data.ssl_protocols.sslv2 | default(false) -}}
-             {{- ' SSLv3' if data.ssl_protocols.sslv3 | default(false) -}}
-             {{- ' TLSv1' if data.ssl_protocols.tlsv1 | default(false) -}}
-             {{- ' TLSv1.1' if data.ssl_protocols.tlsv11 | default(false) -}}
-             {{- ' TLSv1.2' if data.ssl_protocols.tlsv12 | default(false) -}}
-             {{- ' TLSv1.3' if data.ssl_protocols.tlsv13 | default(false) }};
+  {{- ' SSLv3' if data.ssl_protocols.sslv3 | default(false) -}}
+  {{- ' TLSv1' if data.ssl_protocols.tlsv1 | default(false) -}}
+  {{- ' TLSv1.1' if data.ssl_protocols.tlsv11 | default(false) -}}
+  {{- ' TLSv1.2' if data.ssl_protocols.tlsv12 | default(false) -}}
+  {{- ' TLSv1.3' if data.ssl_protocols.tlsv13 | default(false) }};
 {% endif %}
 {%- if data.ssl_reject_handshake is defined %}
 ssl_reject_handshake {{ data.ssl_reject_handshake | ternary('on', 'off') }};
@@ -75,7 +75,7 @@ ssl_session_cache none;
 ssl_session_cache{%- if data.ssl_session_cache.builtin is defined -%}
                  {{- ' builtin:' + data.ssl_session_cache.builtin.size | string if data.ssl_session_cache.builtin.size is defined else ' builtin' -}}
                  {%- endif -%}
-                 {{- ' shared:' + data.ssl_session_cache.shared.name + ':' + data.ssl_session_cache.shared.size if data.ssl_session_cache.shared is defined -}};
+                 {{- ' shared:' + data.ssl_session_cache.shared.name | string + ':' + data.ssl_session_cache.shared.size | string if data.ssl_session_cache.shared is defined -}};
 {% endif %}
 {% endif %}
 {%- for key in data.ssl_session_ticket_key | default([]) %}

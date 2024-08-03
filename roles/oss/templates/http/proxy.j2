@@ -63,14 +63,15 @@ proxy_cache_purge {{ data.proxy_cache_purge | join(' ') }};
 proxy_cache_revalidate {{ data.proxy_cache_revalidate | ternary('on', 'off') }};
 {% endif %}
 {%- if data.proxy_cache_use_stale is defined %}
-{%- if data.proxy_cache_use_stale | length > 0 %}
-proxy_cache_use_stale {{ data.proxy_cache_use_stale | join(' ') }};
-{% else %}
+{%- if data.proxy_cache_use_stale.off | default(off) %}
 proxy_cache_use_stale off;
+{% else %}
+proxy_cache_use_stale {{ data.proxy_cache_use_stale.conditions | join(' ') }};
 {% endif %}
 {% endif %}
 {%- for cache_valid in data.proxy_cache_valid | default([]) %}
-proxy_cache_valid {{ cache_valid.codes | join(' ') }} {{ cache_valid.time }};
+proxy_cache_valid {{ ((cache_valid.codes | join(' ')) + ' ') if cache_valid.codes | default([]) | length > 0 -}}
+  {{- cache_valid.time }};
 {% endfor %}
 {%- if data.proxy_connect_timeout is defined %}
 proxy_connect_timeout {{ data.proxy_connect_timeout }};
@@ -89,7 +90,8 @@ proxy_cookie_domain {{ domain.domain }} {{ domain.replacement }};
 proxy_cookie_flags off;
 {% else %}
 {%- for flag in data.proxy_cookie_flags.flags %}
-proxy_cookie_flags {{ flag.cookie }}{{ ' ' + flag.flags | default([]) | join(' ') if flag.flags | default([]) | length > 0 }};
+proxy_cookie_flags {{ flag.cookie -}}
+  {{- ' ' + flag.flags | default([]) | join(' ') if flag.flags | default([]) | length > 0 }};
 {% endfor %}
 {% endif %}
 {% endif %}
@@ -136,10 +138,10 @@ proxy_max_temp_file_size {{ data.proxy_max_temp_file_size }};
 proxy_method {{ data.proxy_method }};
 {% endif %}
 {%- if data.proxy_next_upstream is defined %}
-{%- if data.proxy_next_upstream | length > 0 %}
-proxy_next_upstream {{ data.proxy_next_upstream | join(' ') }};
-{% else %}
+{%- if data.proxy_next_upstream.off | default(false) %}
 proxy_next_upstream off;
+{% else %}
+proxy_next_upstream {{ data.proxy_next_upstream.conditions | join(' ') }};
 {% endif %}
 {% endif %}
 {%- if data.proxy_next_upstream_timeout is defined %}
@@ -148,9 +150,9 @@ proxy_next_upstream_timeout {{ data.proxy_next_upstream_timeout }};
 {%- if data.proxy_next_upstream_tries is defined %}
 proxy_next_upstream_tries {{ data.proxy_next_upstream_tries }};
 {% endif %}
-{%- for no_cache in data.proxy_no_cache | default([]) %}
-proxy_no_cache {{ no_cache.conditions | join(' ') }};
-{% endfor %}
+{%- if data.proxy_no_cache | default([]) | length > 0 %}
+proxy_no_cache {{ data.proxy_no_cache | join(' ') }};
+{% endif %}
 {%- for header in data.proxy_pass_header | default([]) %}
 proxy_pass_header {{ header }};
 {% endfor %}
@@ -221,11 +223,11 @@ proxy_ssl_password_file {{ data.proxy_ssl_password_file }};
        data.proxy_ssl_protocols.tlsv12 | default(false) or
        data.proxy_ssl_protocols.tlsv13 | default(false)) %}
 proxy_ssl_protocols{{ ' SSLv2' if data.proxy_ssl_protocols.sslv2 | default(false) -}}
-                   {{- ' SSLv3' if data.proxy_ssl_protocols.sslv3 | default(false) -}}
-                   {{- ' TLSv1' if data.proxy_ssl_protocols.tlsv1 | default(false) -}}
-                   {{- ' TLSv1.1' if data.proxy_ssl_protocols.tlsv11 | default(false) -}}
-                   {{- ' TLSv1.2' if data.proxy_ssl_protocols.tlsv12 | default(false) -}}
-                   {{- ' TLSv1.3' if data.proxy_ssl_protocols.tlsv13 | default(false) }};
+  {{- ' SSLv3' if data.proxy_ssl_protocols.sslv3 | default(false) -}}
+  {{- ' TLSv1' if data.proxy_ssl_protocols.tlsv1 | default(false) -}}
+  {{- ' TLSv1.1' if data.proxy_ssl_protocols.tlsv11 | default(false) -}}
+  {{- ' TLSv1.2' if data.proxy_ssl_protocols.tlsv12 | default(false) -}}
+  {{- ' TLSv1.3' if data.proxy_ssl_protocols.tlsv13 | default(false) }};
 {% endif %}
 {%- if data.proxy_ssl_server_name is defined %}
 proxy_ssl_server_name {{ data.proxy_ssl_server_name | ternary('on', 'off') }};
@@ -247,43 +249,42 @@ proxy_store {{ data.proxy_store }};
 {% endif %}
 {%- if data.proxy_store_access is defined %}
 proxy_store_access{{ ' user:' + data.proxy_store_access.user | string if data.proxy_store_access.user is defined -}}
-                  {{- ' group:' + data.proxy_store_access.group | string if data.proxy_store_access.group is defined -}}
-                  {{- ' all:' + data.proxy_store_access.all | string if data.proxy_store_access.all is defined }};
+  {{- ' group:' + data.proxy_store_access.group | string if data.proxy_store_access.group is defined -}}
+  {{- ' all:' + data.proxy_store_access.all | string if data.proxy_store_access.all is defined }};
 {% endif %}
 {%- if data.proxy_temp_file_write_size is defined %}
 proxy_temp_file_write_size {{ data.proxy_temp_file_write_size }};
 {% endif %}
 {%- if data.proxy_temp_path is defined %}
 proxy_temp_path {{ data.proxy_temp_path.path -}}
-                {{- ' 1' if data.proxy_temp_path.level | default(0) > 0 -}}
-                {{- ' 2' if data.proxy_temp_path.level | default(0) > 1 -}}
-                {{- ' 3' if data.proxy_temp_path.level | default(0) > 2 -}};
+  {{- ' 1' if data.proxy_temp_path.level | default(0) > 0 -}}
+  {{- ' 2' if data.proxy_temp_path.level | default(0) > 1 -}}
+  {{- ' 3' if data.proxy_temp_path.level | default(0) > 2 -}};
 {% endif %}
 {% endif %}
 
 {%- if context == 'http' %}
 {%- for path in data.proxy_cache_path | default([]) %}
 proxy_cache_path {{ path.path -}}
-                 {%- if path.levels | default(0) > 0 -%}
-                 {{- ' levels=1' -}}
-                 {{- ':2' if path.levels > 1 -}}
-                 {{- ':3' if path.levels > 2 -}}
-                 {%- endif -%}
-                 {{- ' use_temp_path=' + path.use_temp_path | ternary('on', 'off') if path.use_temp_path is defined -}}
-                 {{- ' keys_zone=' + path.keys_zone.name | string + ':' + path.keys_zone.size | string -}}
-                 {{- ' inactive=' + path.inactive | string if path.inactive is defined -}}
-                 {{- ' max_size=' + path.max_size | string if path.max_size is defined -}}
-                 {{- ' min_free=' + path.min_free | string if path.min_free is defined -}}
-                 {{- ' manager_files=' + path.manager_files | string if path.manager_files is defined -}}
-                 {{- ' manager_sleep=' + path.manager_sleep | string if path.manager_sleep is defined -}}
-                 {{- ' manager_threshold=' + path.manager_threshold | string if path.manager_threshold is defined -}}
-                 {{- ' loader_files=' + path.loader_files | string if path.loader_files is defined -}}
-                 {{- ' loader_sleep=' + path.loader_sleep | string if path.loader_sleep is defined -}}
-                 {{- ' loader_threshold=' + path.loader_threshold | string if path.loader_threshold is defined -}}
-                 {{- ' purger=' + path.purger | ternary('on', 'off') if path.purger is defined -}}
-                 {{- ' purger_files=' + path.purger_files | string if path.purger_files is defined -}}
-                 {{- ' purger_sleep=' + path.purger_sleep | string if path.purger_sleep is defined -}}
-                 {{- ' purger_threshold=' + path.purger_threshold | string if path.purger_threshold is defined }};
+  {%- if path.levels | default(0) | int > 0 -%}
+  {{- ' levels=1' -}}
+  {{- ':2' if path.levels | int > 1 -}}
+  {%- endif -%}
+  {{- ' use_temp_path=' + path.use_temp_path | ternary('on', 'off') if path.use_temp_path is defined -}}
+  {{- ' keys_zone=' + path.keys_zone.name | string + ':' + path.keys_zone.size | string -}}
+  {{- ' inactive=' + path.inactive | string if path.inactive is defined -}}
+  {{- ' max_size=' + path.max_size | string if path.max_size is defined -}}
+  {{- ' min_free=' + path.min_free | string if path.min_free is defined -}}
+  {{- ' manager_files=' + path.manager_files | string if path.manager_files is defined -}}
+  {{- ' manager_sleep=' + path.manager_sleep | string if path.manager_sleep is defined -}}
+  {{- ' manager_threshold=' + path.manager_threshold | string if path.manager_threshold is defined -}}
+  {{- ' loader_files=' + path.loader_files | string if path.loader_files is defined -}}
+  {{- ' loader_sleep=' + path.loader_sleep | string if path.loader_sleep is defined -}}
+  {{- ' loader_threshold=' + path.loader_threshold | string if path.loader_threshold is defined -}}
+  {{- ' purger=' + path.purger | ternary('on', 'off') if path.purger is defined -}}
+  {{- ' purger_files=' + path.purger_files | string if path.purger_files is defined -}}
+  {{- ' purger_sleep=' + path.purger_sleep | string if path.purger_sleep is defined -}}
+  {{- ' purger_threshold=' + path.purger_threshold | string if path.purger_threshold is defined }};
 {% endfor %}
 {% endif %}
 

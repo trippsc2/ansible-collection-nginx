@@ -1,0 +1,450 @@
+---
+- name: Validate response in error_page in server block
+  loop: "{{ _nginx_server_block.error_page | default([]) }}"
+  when:
+    - item.response is defined
+  ansible.builtin.assert:
+    that:
+      - item.response | regex_search('^=[0-9]{3}$') or
+        item.response | regex_search('^=$')
+    fail_msg: "Directive 'response' in 'error_page' in server block in '{{ _nginx_http_config_file.destination }}' is not either '=' or '=XXX' where XXX is a 3-digit response code. Value: {{ item.response }}"
+    success_msg: "Directive 'response' in 'error_page' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.response }}"
+
+- name: Validate uri in error_page in server block
+  loop: "{{ _nginx_server_block.error_page | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.uri is uri or
+        item.uri | regex_search('^@')
+    fail_msg: "Directive 'uri' in 'error_page' in server block in '{{ _nginx_http_config_file.destination }}' is not either a reference to a location beginning with '@' or a valid URI. Value: {{ item.uri }}"
+    success_msg: "Directive 'uri' in 'error_page' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.uri }}"
+
+- name: Validate auth_delay in server block
+  when:
+    - _nginx_server_block.auth_delay is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.auth_delay | string | community.general.to_time_unit('s') >= 0
+    fail_msg: "Directive 'auth_delay' in server block in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive duration. Value: {{ _nginx_server_block.auth_delay }}"
+    success_msg: "Directive 'auth_delay' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.auth_delay }}"
+
+- name: Validate client_body_buffer_size in server block
+  when:
+    - _nginx_server_block.client_body_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.client_body_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_body_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.client_body_buffer_size }}"
+    success_msg: "Directive 'client_body_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.client_body_buffer_size }}"
+
+- name: Validate client_body_timeout in server block
+  when:
+    - _nginx_server_block.client_body_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.client_body_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'client_body_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.client_body_timeout }}"
+    success_msg: "Directive 'client_body_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.client_body_timeout }}"
+
+- name: Validate client_max_body_size in server block
+  when:
+    - _nginx_server_block.client_max_body_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.client_max_body_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_max_body_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.client_max_body_size }}"
+    success_msg: "Directive 'client_max_body_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.client_max_body_size }}"
+
+- name: Validate directio in server block
+  when:
+    - _nginx_server_block.directio is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.directio == 'off' or
+        _nginx_server_block.directio | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_header_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size or 'off'. Value: {{ _nginx_server_block.directio }}"
+    success_msg: "Directive 'client_header_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.directio }}"
+
+- name: Validate keepalive_requests in server block
+  when:
+    - _nginx_server_block.keepalive_requests is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.keepalive_requests | int > 0
+    fail_msg: "Directive 'keepalive_requests' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.keepalive_requests }}"
+    success_msg: "Directive 'keepalive_requests' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.keepalive_requests }}"
+
+- name: Validate keepalive_time in server block
+  when:
+    - _nginx_server_block.keepalive_time is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.keepalive_time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'keepalive_time' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.keepalive_time }}"
+    success_msg: "Directive 'keepalive_time' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.keepalive_time }}"
+
+- name: Validate timeout in keepalive_timeout in server block
+  when:
+    - _nginx_server_block.keepalive_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.keepalive_timeout.timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'timeout' in 'keepalive_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.keepalive_timeout.timeout }}"
+    success_msg: "Directive 'timeout' in 'keepalive_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.keepalive_timeout.timeout }}"
+
+- name: Validate header_timeout in keepalive_timeout in server block
+  when:
+    - _nginx_server_block.keepalive_timeout is defined
+    - _nginx_server_block.keepalive_timeout.header_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.keepalive_timeout.header_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'header_timeout' in 'keepalive_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.keepalive_timeout.header_timeout }}"
+    success_msg: "Directive 'header_timeout' in 'keepalive_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.keepalive_timeout.header_timeout }}"
+
+- name: Validate lingering_time in server block
+  when:
+    - _nginx_server_block.lingering_time is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.lingering_time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'lingering_time' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.lingering_time }}"
+    success_msg: "Directive 'lingering_time' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.lingering_time }}"
+
+- name: Validate lingering_timeout in server block
+  when:
+    - _nginx_server_block.lingering_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.lingering_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'lingering_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.lingering_timeout }}"
+    success_msg: "Directive 'lingering_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.lingering_timeout }}"
+
+- name: Validate max_ranges in server block
+  when:
+    - _nginx_server_block.max_ranges is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.max_ranges | int >= 0
+    fail_msg: "Directive 'max_ranges' in server block in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ _nginx_server_block.max_ranges }}"
+    success_msg: "Directive 'max_ranges' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.max_ranges }}"
+
+- name: Validate max in open_file_cache in server block
+  when:
+    - _nginx_server_block.open_file_cache is defined
+    - not _nginx_server_block.open_file_cache.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.open_file_cache.max | int > 0
+    fail_msg: "Directive 'max' in 'open_file_cache' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.open_file_cache.max }}"
+    success_msg: "Directive 'max' in 'open_file_cache' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.open_file_cache.max }}"
+
+- name: Validate inactive in open_file_cache in server block
+  when:
+    - _nginx_server_block.open_file_cache is defined
+    - not _nginx_server_block.open_file_cache.off | default(false)
+    - _nginx_server_block.open_file_cache.inactive is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.open_file_cache.inactive | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'inactive' in 'open_file_cache' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.open_file_cache.inactive }}"
+    success_msg: "Directive 'inactive' in 'open_file_cache' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.open_file_cache.inactive }}"
+
+- name: Validate open_file_cache_min_uses in server block
+  when:
+    - _nginx_server_block.open_file_cache_min_uses is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.open_file_cache_min_uses | int > 0
+    fail_msg: "Directive 'open_file_cache_min_uses' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.open_file_cache_min_uses }}"
+    success_msg: "Directive 'open_file_cache_min_uses' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.open_file_cache_min_uses }}"
+
+- name: Validate open_file_cache_valid in server block
+  when:
+    - _nginx_server_block.open_file_cache_valid is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.open_file_cache_valid | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'open_file_cache_valid' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.open_file_cache_valid }}"
+    success_msg: "Directive 'open_file_cache_valid' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.open_file_cache_valid }}"
+
+- name: Validate count in output_buffers in server block
+  when:
+    - _nginx_server_block.output_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.output_buffers.count | int > 0
+    fail_msg: "Directive 'count' in 'output_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.output_buffers.count }}"
+    success_msg: "Directive 'count' in 'output_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.output_buffers.count }}"
+
+- name: Validate size in output_buffers in server block
+  when:
+    - _nginx_server_block.output_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.output_buffers.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'output_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.output_buffers.size }}"
+    success_msg: "Directive 'size' in 'output_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.output_buffers.size }}"
+
+- name: Validate postpone_output in server block
+  when:
+    - _nginx_server_block.postpone_output is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.postpone_output | int >= 0
+    fail_msg: "Directive 'postpone_output' in server block in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ _nginx_server_block.postpone_output }}"
+    success_msg: "Directive 'postpone_output' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.postpone_output }}"
+
+- name: Validate resolver in server block
+  loop: "{{ _nginx_server_block.resolver | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/server/resolver.yml
+  loop_control:
+    loop_var: _nginx_resolver
+
+- name: Validate resolver_timeout in server block
+  when:
+    - _nginx_server_block.resolver_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.resolver_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'resolver_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.resolver_timeout }}"
+    success_msg: "Directive 'resolver_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.resolver_timeout }}"
+
+- name: Validate send_lowat in server block
+  when:
+    - _nginx_server_block.send_lowat is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.send_lowat | string | human_to_bytes('B') >= 0
+    fail_msg: "Directive 'send_lowat' in server block in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive size. Value: {{ _nginx_server_block.send_lowat }}"
+    success_msg: "Directive 'send_lowat' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.send_lowat }}"
+
+- name: Validate send_timeout in server block
+  when:
+    - _nginx_server_block.send_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.send_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'send_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.send_timeout }}"
+    success_msg: "Directive 'send_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.send_timeout }}"
+
+- name: Validate sendfile_max_chunk in server block
+  when:
+    - _nginx_server_block.sendfile_max_chunk is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.sendfile_max_chunk | string | human_to_bytes('B') >= 0
+    fail_msg: "Directive 'sendfile_max_chunk' in server block in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive size. Value: {{ _nginx_server_block.sendfile_max_chunk }}"
+    success_msg: "Directive 'sendfile_max_chunk' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.sendfile_max_chunk }}"
+
+- name: Validate subrequest_output_buffer_size in server block
+  when:
+    - _nginx_server_block.subrequest_output_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.subrequest_output_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'subrequest_output_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.subrequest_output_buffer_size }}"
+    success_msg: "Directive 'subrequest_output_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.subrequest_output_buffer_size }}"
+
+- name: Validate types_hash_bucket_size in server block
+  when:
+    - _nginx_server_block.types_hash_bucket_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.types_hash_bucket_size | int > 0
+    fail_msg: "Directive 'types_hash_bucket_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.types_hash_bucket_size }}"
+    success_msg: "Directive 'types_hash_bucket_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.types_hash_bucket_size }}"
+
+- name: Validate types_hash_max_size in server block
+  when:
+    - _nginx_server_block.types_hash_max_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.types_hash_max_size | int > 0
+    fail_msg: "Directive 'types_hash_max_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.types_hash_max_size }}"
+    success_msg: "Directive 'types_hash_max_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.types_hash_max_size }}"
+
+- name: Validate client_header_buffer_size in server block
+  when:
+    - _nginx_server_block.client_header_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.client_header_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_header_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.client_header_buffer_size }}"
+    success_msg: "Directive 'client_header_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.client_header_buffer_size }}"
+
+- name: Validate client_header_timeout in server block
+  when:
+    - _nginx_server_block.client_header_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.client_header_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'client_header_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.client_header_timeout }}"
+    success_msg: "Directive 'client_header_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.client_header_timeout }}"
+
+- name: Validate connection_pool_size in server block
+  when:
+    - _nginx_server_block.connection_pool_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.connection_pool_size | int > 0
+    fail_msg: "Directive 'connection_pool_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.connection_pool_size }}"
+    success_msg: "Directive 'connection_pool_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.connection_pool_size }}"
+
+- name: Validate count in large_client_header_buffers in server block
+  when:
+    - _nginx_server_block.large_client_header_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.large_client_header_buffers.count | int > 0
+    fail_msg: "Directive 'count' in 'large_client_header_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.large_client_header_buffers.count }}"
+    success_msg: "Directive 'count' in 'large_client_header_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.large_client_header_buffers.count }}"
+
+- name: Validate size in large_client_header_buffers in server block
+  when:
+    - _nginx_server_block.large_client_header_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.large_client_header_buffers.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'large_client_header_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.large_client_header_buffers.size }}"
+    success_msg: "Directive 'size' in 'large_client_header_buffers' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.large_client_header_buffers.size }}"
+
+- name: Validate request_pool_size in server block
+  when:
+    - _nginx_server_block.request_pool_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.request_pool_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'request_pool_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.request_pool_size }}"
+    success_msg: "Directive 'request_pool_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.request_pool_size }}"
+
+- name: Validate address in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.address is defined
+  ansible.builtin.assert:
+    that:
+      - item.address is ansible.utils.ip_address or
+        item.address | regex_search('^unix:')
+    fail_msg: "Directive 'address' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a valid IP address or UNIX socket. Value: {{ item.address }}"
+    success_msg: "Directive 'address' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.address }}"
+
+- name: Validate port in listen in server block is not defined with UNIX socket
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.address is defined
+    - item.address | regex_search('^unix:')
+  ansible.builtin.assert:
+    that:
+      - item.port is not defined
+    fail_msg: "Directive 'port' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is defined with a UNIX socket."
+    success_msg: "Directive 'port' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not defined with a UNIX socket."
+
+- name: Validate port in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.port is defined
+  ansible.builtin.assert:
+    that:
+      - item.port | int > 0
+      - item.port | int <= 65535
+    fail_msg: "Directive 'port' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a valid port number. Value: {{ item.port }}"
+    success_msg: "Directive 'port' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.port }}"
+
+- name: Validate setfib in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.setfib is defined
+  ansible.builtin.assert:
+    that:
+      - item.setfib | int >= 0
+    fail_msg: "Directive 'setfib' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.setfib }}"
+    success_msg: "Directive 'setfib' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.setfib }}"
+
+- name: Validate fastopen in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.fastopen is defined
+  ansible.builtin.assert:
+    that:
+      - item.fastopen | int >= 0
+    fail_msg: "Directive 'fastopen' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.fastopen }}"
+    success_msg: "Directive 'fastopen' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.fastopen }}"
+
+- name: Validate backlog in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.backlog is defined
+  ansible.builtin.assert:
+    that:
+      - item.backlog | int > 0
+    fail_msg: "Directive 'backlog' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.backlog }}"
+    success_msg: "Directive 'backlog' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.backlog }}"
+
+- name: Validate rcvbuf in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.rcvbuf is defined
+  ansible.builtin.assert:
+    that:
+      - item.rcvbuf | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'rcvbuf' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ item.rcvbuf }}"
+    success_msg: "Directive 'rcvbuf' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.rcvbuf }}"
+
+- name: Validate sndbuf in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.sndbuf is defined
+  ansible.builtin.assert:
+    that:
+      - item.sndbuf | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'sndbuf' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ item.sndbuf }}"
+    success_msg: "Directive 'sndbuf' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.sndbuf }}"
+
+- name: Validate keepidle in so_keepalive in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.so_keepalive is defined
+    - not item.so_keepalive.on | default(false)
+    - not item.so_keepalive.off | default(false)
+    - item.so_keepalive.keepidle is defined
+  ansible.builtin.assert:
+    that:
+      - item.so_keepalive.keepidle | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'keepidle' in 'so_keepalive' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ item.reuseport }}"
+    success_msg: "Directive 'keepidle' in 'so_keepalive' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.reuseport }}"
+
+- name: Validate keepintvl in so_keepalive in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.so_keepalive is defined
+    - not item.so_keepalive.on | default(false)
+    - not item.so_keepalive.off | default(false)
+    - item.so_keepalive.keepintvl is defined
+  ansible.builtin.assert:
+    that:
+      - item.so_keepalive.keepintvl | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'keepintvl' in 'so_keepalive' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ item.reuseport }}"
+    success_msg: "Directive 'keepintvl' in 'so_keepalive' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.reuseport }}"
+
+- name: Validate keepcnt in so_keepalive in listen in server block
+  loop: "{{ _nginx_server_block.listen | default([]) }}"
+  when:
+    - item.so_keepalive is defined
+    - not item.so_keepalive.on | default(false)
+    - not item.so_keepalive.off | default(false)
+    - item.so_keepalive.keepcnt is defined
+  ansible.builtin.assert:
+    that:
+      - item.so_keepalive.keepcnt | int > 0
+    fail_msg: "Directive 'keepcnt' in 'so_keepalive' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.reuseport }}"
+    success_msg: "Directive 'keepcnt' in 'so_keepalive' in 'listen' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.reuseport }}"
+
+- name: Validate server_name in server block
+  loop: "{{ _nginx_server_block.server_name | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item == '_' or
+        item is community.general.fqdn_valid
+    fail_msg: "Directive 'server_name' in server block in '{{ _nginx_http_config_file.destination }}' is not a valid domain name. Value: {{ item }}"
+    success_msg: "Directive 'server_name' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"

@@ -1,0 +1,156 @@
+---
+- name: Validate address in grpc_bind in HTTP config file is defined
+  when:
+    - _nginx_http_config_file.grpc_bind is defined
+    - not _nginx_http_config_file.grpc_bind.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_bind.address is defined
+    fail_msg: "Directive 'address' in 'grpc_bind' in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'address' in 'grpc_bind' in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate grpc_buffer_size in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'grpc_buffer_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.grpc_buffer_size }}"
+    success_msg: "Directive 'grpc_buffer_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_buffer_size }}"
+
+- name: Validate grpc_connect_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_connect_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_connect_timeout | string | community.general.to_time_unit('s') >= 0
+    fail_msg: "Directive 'grpc_connect_timeout' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive duration. Value: {{ _nginx_http_config_file.grpc_connect_timeout }}"
+    success_msg: "Directive 'grpc_connect_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_connect_timeout }}"
+
+- name: Validate grpc_next_upstream in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_next_upstream is defined
+    - not _nginx_http_config_file.grpc_next_upstream.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_next_upstream.conditions is defined
+      - _nginx_http_config_file.grpc_next_upstream.conditions | length > 0
+    fail_msg: "Directive 'conditions' in 'grpc_next_upstream' in '{{ _nginx_http_config_file.destination }}' is not defined or is empty."
+    success_msg: "Directive 'conditions' in 'grpc_next_upstream' in '{{ _nginx_http_config_file.destination }}' is defined as a non-empty list."
+
+- name: Validate grpc_next_upstream_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_next_upstream_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_next_upstream_timeout | string | community.general.to_time_unit('s') >= 0
+    fail_msg: "Directive 'grpc_next_upstream_timeout' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive duration. Value: {{ _nginx_http_config_file.grpc_next_upstream_timeout }}"
+    success_msg: "Directive 'grpc_next_upstream_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_next_upstream_timeout }}"
+
+- name: Validate grpc_next_upstream_tries in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_next_upstream_tries is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_next_upstream_tries | int >= 0
+    fail_msg: "Directive 'grpc_next_upstream_tries' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ _nginx_http_config_file.grpc_next_upstream_tries }}"
+    success_msg: "Directive 'grpc_next_upstream_tries' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_next_upstream_tries }}"
+
+- name: Validate grpc_read_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_read_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_read_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'grpc_read_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.grpc_read_timeout }}"
+    success_msg: "Directive 'grpc_read_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_read_timeout }}"
+
+- name: Validate grpc_send_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_send_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_send_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'grpc_send_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.grpc_send_timeout }}"
+    success_msg: "Directive 'grpc_send_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_send_timeout }}"
+
+- name: Check if grpc_ssl_certificate in HTTP config file is valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_certificate is defined
+  become: true
+  check_mode: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_http_config_file.grpc_ssl_certificate }}"
+  register: _nginx_grpc_ssl_certificate
+
+- name: Validate grpc_ssl_certificate in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_certificate is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_grpc_ssl_certificate.stat.exists
+    fail_msg: "Directive 'grpc_ssl_certificate' in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_certificate }}"
+    success_msg: "Directive 'grpc_ssl_certificate' in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_certificate }}"
+
+- name: Check if grpc_ssl_certificate_key in HTTP config file is valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_certificate_key is defined
+  become: true
+  check_mode: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_http_config_file.grpc_ssl_certificate_key }}"
+  register: _nginx_grpc_ssl_certificate_key
+
+- name: Validate grpc_ssl_certificate_key in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_certificate_key is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_grpc_ssl_certificate_key.stat.exists
+    fail_msg: "Directive 'grpc_ssl_certificate_key' in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_certificate_key }}"
+    success_msg: "Directive 'grpc_ssl_certificate_key' in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_certificate_key }}"
+
+- name: Check if grpc_ssl_crl in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_crl is defined
+  become: true
+  check_mode: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_http_config_file.grpc_ssl_crl }}"
+  register: _nginx_grpc_ssl_crl
+
+- name: Validate grpc_ssl_crl in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_crl is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_grpc_ssl_crl.stat.exists
+    fail_msg: "Directive 'grpc_ssl_crl' in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_crl }}"
+    success_msg: "Directive 'grpc_ssl_crl' in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_crl }}"
+
+- name: Check if grpc_ssl_password_file in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_password_file is defined
+  become: true
+  check_mode: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_http_config_file.grpc_ssl_password_file }}"
+  register: _nginx_grpc_ssl_password_file
+
+- name: Validate grpc_ssl_password_file in HTTP config file is a valid path
+  when:
+    - _nginx_http_config_file.grpc_ssl_password_file is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_grpc_ssl_password_file.stat.exists
+    fail_msg: "Directive 'grpc_ssl_password_file' in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_password_file }}"
+    success_msg: "Directive 'grpc_ssl_password_file' in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_http_config_file.grpc_ssl_password_file }}"
+
+- name: Validate grpc_ssl_verify_depth in HTTP config file
+  when:
+    - _nginx_http_config_file.grpc_ssl_verify_depth is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.grpc_ssl_verify_depth | int >= 0
+    fail_msg: "Directive 'grpc_ssl_verify_depth' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ _nginx_http_config_file.grpc_ssl_verify_depth }}"
+    success_msg: "Directive 'grpc_ssl_verify_depth' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.grpc_ssl_verify_depth }}"

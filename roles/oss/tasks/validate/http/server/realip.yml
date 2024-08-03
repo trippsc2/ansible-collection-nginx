@@ -1,0 +1,9 @@
+---
+- name: Validate set_real_ip_from in server block
+  loop: "{{ _nginx_server_block.set_real_ip_from | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item == 'unix:' or
+        item | ansible.utils.ipaddr != false
+    fail_msg: "Directive 'set_real_ip_from' in server block in '{{ _nginx_http_config_file.destination }}' is not 'unix:', a valid IP address, or a valid CIDR subnet. Value: {{ item }}"
+    success_msg: "Directive 'set_real_ip_from' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"

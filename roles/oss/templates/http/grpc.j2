@@ -7,7 +7,8 @@
 {%- if data.grpc_bind.off | default(false) %}
 grpc_bind off;
 {% else %}
-grpc_bind {{ data.grpc_bind.address }}{{' transparent' if data.grpc_bind.transparent | default(false) }};
+grpc_bind {{ data.grpc_bind.address -}}
+  {{- ' transparent' if data.grpc_bind.transparent | default(false) }};
 {% endif %}
 {% endif %}
 {%- if data.grpc_buffer_size is defined %}
@@ -29,7 +30,7 @@ grpc_intercept_errors {{ data.grpc_intercept_errors | ternary ('on', 'off') }};
 {%- if data.grpc_next_upstream.off | default(false) %}
 grpc_next_upstream off;
 {% else %}
-grpc_next_upstream {{ data.grpc_next_upstream.upstreams | join(' ') }};
+grpc_next_upstream {{ data.grpc_next_upstream.conditions | join(' ') }};
 {% endif %}
 {% endif %}
 {%- if data.grpc_next_upstream_timeout is defined %}
@@ -82,11 +83,11 @@ grpc_ssl_password_file {{ data.grpc_ssl_password_file }};
        data.grpc_ssl_protocols.tlsv12 | default(false) or
        data.grpc_ssl_protocols.tlsv13 | default(false)) %}
 grpc_ssl_protocols{{ ' SSLv2' if data.grpc_ssl_protocols.sslv2 | default(false) -}}
-                  {{- ' SSLv3' if data.grpc_ssl_protocols.sslv3 | default(false) -}}
-                  {{- ' TLSv1' if data.grpc_ssl_protocols.tlsv1 | default(false) -}}
-                  {{- ' TLSv1.1' if data.grpc_ssl_protocols.tlsv11 | default(false) -}}
-                  {{- ' TLSv1.2' if data.grpc_ssl_protocols.tlsv12 | default(false) -}}
-                  {{- ' TLSv1.3' if data.grpc_ssl_protocols.tlsv13 | default(false) }};
+  {{- ' SSLv3' if data.grpc_ssl_protocols.sslv3 | default(false) -}}
+  {{- ' TLSv1' if data.grpc_ssl_protocols.tlsv1 | default(false) -}}
+  {{- ' TLSv1.1' if data.grpc_ssl_protocols.tlsv11 | default(false) -}}
+  {{- ' TLSv1.2' if data.grpc_ssl_protocols.tlsv12 | default(false) -}}
+  {{- ' TLSv1.3' if data.grpc_ssl_protocols.tlsv13 | default(false) }};
 {% endif %}
 {%- if data.grpc_ssl_server_name is defined %}
 grpc_ssl_server_name {{ data.grpc_ssl_server_name | ternary ('on', 'off') }};

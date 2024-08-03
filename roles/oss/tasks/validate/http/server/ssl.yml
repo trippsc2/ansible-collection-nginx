@@ -1,0 +1,240 @@
+---
+- name: Validate ssl_buffer_size in server block
+  when:
+    - _nginx_server_block.ssl_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'ssl_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_server_block.ssl_buffer_size }}"
+    success_msg: "Directive 'ssl_buffer_size' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.ssl_buffer_size }}"
+
+- name: Check if ssl_certificate in server block is a valid path
+  loop: "{{ _nginx_server_block.ssl_certificate | default([]) }}"
+  become: true
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: _nginx_ssl_certificate
+
+- name: Validate ssl_certificate in server block
+  loop: "{{ _nginx_ssl_certificate.results }}"
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg or item.stat.islnk
+    fail_msg: "Directive 'ssl_certificate' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ item.item }}"
+    success_msg: "Directive 'ssl_certificate' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ item.item }}"
+
+- name: Check if ssl_certificate_key in server block is a valid path
+  loop: "{{ _nginx_server_block.ssl_certificate_key | default([]) }}"
+  become: true
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: _nginx_ssl_certificate_key
+
+- name: Validate ssl_certificate_key in server block
+  loop: "{{ _nginx_ssl_certificate_key.results }}"
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg or item.stat.islnk
+    fail_msg: "Directive 'ssl_certificate_key' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ item.item }}"
+    success_msg: "Directive 'ssl_certificate_key' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ item.item }}"
+
+- name: Check if ssl_client_certificate in server block is a valid path
+  when:
+    - _nginx_server_block.ssl_client_certificate is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.ssl_client_certificate }}"
+  register: _nginx_ssl_client_certificate
+
+- name: Validate ssl_client_certificate in server block
+  when:
+    - _nginx_server_block.ssl_client_certificate is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_ssl_client_certificate.stat.isreg or _nginx_ssl_client_certificate.stat.islnk
+    fail_msg: "Directive 'ssl_client_certificate' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ _nginx_server_block.ssl_client_certificate }}"
+    success_msg: "Directive 'ssl_client_certificate' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ _nginx_server_block.ssl_client_certificate }}"
+
+- name: Check if ssl_crl in server block
+  when:
+    - _nginx_server_block.ssl_crl is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.ssl_crl }}"
+  register: _nginx_ssl_crl
+
+- name: Validate ssl_crl in server block
+  when:
+    - _nginx_server_block.ssl_crl is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_ssl_crl.stat.isreg or _nginx_ssl_crl.stat.islnk
+    fail_msg: "Directive 'ssl_crl' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ _nginx_server_block.ssl_crl }}"
+    success_msg: "Directive 'ssl_crl' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ _nginx_server_block.ssl_crl }}"
+
+- name: Check if ssl_dhparam in server block is a valid path
+  when:
+    - _nginx_server_block.ssl_dhparam is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.ssl_dhparam }}"
+  register: _nginx_ssl_dhparam
+
+- name: Validate ssl_dhparam in server block
+  when:
+    - _nginx_server_block.ssl_dhparam is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_ssl_dhparam.stat.isreg or _nginx_ssl_dhparam.stat.islnk
+    fail_msg: "Directive 'ssl_dhparam' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ _nginx_server_block.ssl_dhparam }}"
+    success_msg: "Directive 'ssl_dhparam' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ _nginx_server_block.ssl_dhparam }}"
+
+- name: Validate shared in ssl_ocsp_cache in server block is defined
+  when:
+    - _nginx_server_block.ssl_ocsp_cache is defined
+    - not _nginx_server_block.ssl_ocsp_cache.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_ocsp_cache.shared is defined
+    fail_msg: HTTP config file shared in ssl_ocsp_cache must be defined.
+    success_msg: HTTP config file shared in ssl_ocsp_cache is defined.
+
+- name: Validate size in shared in ssl_ocsp_cache in server block
+  when:
+    - _nginx_server_block.ssl_ocsp_cache is defined
+    - not _nginx_server_block.ssl_ocsp_cache.off | default(false)
+    - _nginx_server_block.ssl_ocsp_cache.shared is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_ocsp_cache.shared.size | string | human_to_bytes('B') > 0
+    fail_msg: "HTTP config file size in shared in ssl_ocsp_cache '{{ _nginx_server_block.ssl_ocsp_cache.shared.size }}' must be a positive size."
+    success_msg: "HTTP config file size in shared in ssl_ocsp_cache '{{ _nginx_server_block.ssl_ocsp_cache.shared.size }}' is a positive size."
+
+- name: Check if ssl_password_file in server block is a valid path
+  when:
+    - _nginx_server_block.ssl_password_file is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.ssl_password_file }}"
+  register: _nginx_ssl_password_file
+
+- name: Validate ssl_password_file in server block
+  when:
+    - _nginx_server_block.ssl_password_file is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_ssl_password_file.stat.isreg or _nginx_ssl_password_file.stat.islnk
+    fail_msg: "Directive 'ssl_password_file' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ _nginx_server_block.ssl_password_file }}"
+    success_msg: "Directive 'ssl_password_file' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ _nginx_server_block.ssl_password_file }}"
+
+- name: Validate builtin or shared in ssl_session_cache in server block
+  when:
+    - _nginx_server_block.ssl_session_cache is defined
+    - not _nginx_server_block.ssl_session_cache.off | default(false)
+    - not _nginx_server_block.ssl_session_cache.none | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_session_cache.builtin is defined or
+        _nginx_server_block.ssl_session_cache.shared is defined
+    fail_msg: "Directive 'builtin' or 'shared' in 'ssl_session_cache' in server block in '{{ _nginx_http_config_file.destination }}' must be defined."
+    success_msg: "Directive 'builtin' or 'shared' in 'ssl_session_cache' in server block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate size in builtin in ssl_session_cache in server block
+  when:
+    - _nginx_server_block.ssl_session_cache is defined
+    - not _nginx_server_block.ssl_session_cache.off | default(false)
+    - not _nginx_server_block.ssl_session_cache.none | default(false)
+    - _nginx_server_block.ssl_session_cache.builtin is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_session_cache.builtin.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'builtin' in 'ssl_session_cache' in server block in '{{ _nginx_http_config_file.destination }}' must be a positive size. Value: {{ _nginx_server_block.ssl_session_cache.builtin.size }}"
+    success_msg: "Directive 'size' in 'builtin' in 'ssl_session_cache' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.ssl_session_cache.builtin.size }}"
+
+- name: Validate size in shared in ssl_session_cache in server block
+  when:
+    - _nginx_server_block.ssl_session_cache is defined
+    - not _nginx_server_block.ssl_session_cache.off | default(false)
+    - not _nginx_server_block.ssl_session_cache.none | default(false)
+    - _nginx_server_block.ssl_session_cache.shared is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_session_cache.shared.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'shared' in 'ssl_session_cache' in server block in '{{ _nginx_http_config_file.destination }}' must be a positive size. Value: {{ _nginx_server_block.ssl_session_cache.shared.size }}"
+    success_msg: "Directive 'size' in 'shared' in 'ssl_session_cache' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.ssl_session_cache.shared.size }}"
+
+- name: Check if ssl_session_ticket_key in server block is a valid path
+  loop: "{{ _nginx_server_block.ssl_session_ticket_key | default([]) }}"
+  become: true
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: _nginx_ssl_session_ticket_key
+
+- name: Validate ssl_session_ticket_key in server block
+  loop: "{{ _nginx_ssl_session_ticket_key.results }}"
+  ansible.builtin.assert:
+    that:
+      - item.stat.isreg or item.stat.islnk
+    fail_msg: "Directive 'ssl_session_ticket_key' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ item.item }}"
+    success_msg: "Directive 'ssl_session_ticket_key' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ item.item }}"
+
+- name: Validate ssl_session_timeout in server block
+  when:
+    - _nginx_server_block.ssl_session_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_session_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'ssl_session_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_server_block.ssl_session_timeout }}"
+    success_msg: "Directive 'ssl_session_timeout' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.ssl_session_timeout }}"
+
+- name: Check if ssl_stapling_file in server block is a valid path
+  when:
+    - _nginx_server_block.ssl_stapling_file is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.ssl_stapling_file }}"
+  register: _nginx_ssl_stapling_file
+
+- name: Validate ssl_stapling_file in server block
+  when:
+    - _nginx_server_block.ssl_stapling_file is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_ssl_stapling_file.stat.isreg or _nginx_ssl_stapling_file.stat.islnk
+    fail_msg: "Directive 'ssl_stapling_file' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ _nginx_server_block.ssl_stapling_file }}"
+    success_msg: "Directive 'ssl_stapling_file' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ _nginx_server_block.ssl_stapling_file }}"
+
+- name: Validate ssl_stapling_responder in server block
+  when:
+    - _nginx_server_block.ssl_stapling_responder is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_stapling_responder is uri
+    fail_msg: "Directive 'ssl_stapling_responder' in server block in '{{ _nginx_http_config_file.destination }}' is not a valid URI. Value: {{ _nginx_server_block.ssl_stapling_responder }}"
+    success_msg: "Directive 'ssl_stapling_responder' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.ssl_stapling_responder }}"
+
+- name: Check if ssl_trusted_certificate in server block is a valid path
+  when:
+    - _nginx_server_block.ssl_trusted_certificate is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.ssl_trusted_certificate }}"
+  register: _nginx_ssl_trusted_certificate
+
+- name: Validate ssl_trusted_certificate in server block
+  when:
+    - _nginx_server_block.ssl_trusted_certificate is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_ssl_trusted_certificate.stat.isreg or _nginx_ssl_trusted_certificate.stat.islnk
+    fail_msg: "Directive 'ssl_trusted_certificate' in server block in '{{ _nginx_http_config_file.destination }}' references an invalid path. Value: {{ _nginx_server_block.ssl_trusted_certificate }}"
+    success_msg: "Directive 'ssl_trusted_certificate' in server block in '{{ _nginx_http_config_file.destination }}' references a valid path. Value: {{ _nginx_server_block.ssl_trusted_certificate }}"
+
+- name: Validate ssl_verify_depth in server block
+  when:
+    - _nginx_server_block.ssl_verify_depth is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_server_block.ssl_verify_depth | int > 0
+    fail_msg: "Directive 'ssl_verify_depth' in server block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_server_block.ssl_verify_depth }}"
+    success_msg: "Directive 'ssl_verify_depth' in server block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_server_block.ssl_verify_depth }}"

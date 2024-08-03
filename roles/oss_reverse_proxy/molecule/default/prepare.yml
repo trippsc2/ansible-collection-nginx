@@ -10,8 +10,6 @@
         _apache_package: apache2
         _apache_config_file_path: /etc/apache2/ports.conf
         _apache_service: apache2.service
-        _cert_certificate_path: /etc/ssl/certs/nginx.crt
-        _cert_private_key_path: /etc/ssl/private/nginx.key
     
     - name: Set OS specific variables (EL)
       when:
@@ -20,8 +18,38 @@
         _apache_package: httpd
         _apache_config_file_path: /etc/httpd/conf/httpd.conf
         _apache_service: httpd.service
-        _cert_certificate_path: /etc/pki/tls/certs/nginx.crt
-        _cert_private_key_path: /etc/pki/tls/private/nginx.key
+
+    - name: Set NGINX user variable
+      when:
+        - nginx_user is not defined
+      ansible.builtin.set_fact:
+        nginx_user: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+
+    - name: Set NGINX group variable
+      when:
+        - nginx_group is not defined
+      ansible.builtin.set_fact:
+        nginx_group: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+
+    - name: Create NGINX group
+      become: true
+      ansible.builtin.group:
+        name: "{{ nginx_group }}"
+        state: present
+        system: true
+    
+    - name: Create NGINX user
+      become: true
+      ansible.builtin.user:
+        name: "{{ nginx_user }}"
+        group: "{{ nginx_group }}"
+        state: present
+        system: true
+        password: '!'
+        password_lock: true
+        home: /usr/share/nginx
+        shell: /usr/sbin/nologin
+        createhome: false
 
     - name: Install Apache as a target to be proxied
       become: true
@@ -54,10 +82,16 @@
   roles:
     - role: trippsc2.general.self_signed_certificate
       vars:
-        cert_certificate_path: "{{ _cert_certificate_path }}"
-        cert_private_key_path: "{{ _cert_private_key_path }}"
+        cert_certificate_path: "{{ nginxproxy_server_certificate_path }}"
+        cert_certificate_owner: "{{ nginx_user }}"
+        cert_certificate_group: "{{ nginx_group }}"
+        cert_private_key_path: "{{ nginxproxy_server_certificate_key_path }}"
+        cert_private_key_owner: "{{ nginx_user }}"
+        cert_private_key_group: "{{ nginx_group }}" 
         cert_private_key_mode: '0400'
-        cert_common_name: localhost
+        cert_common_name: "{{ ansible_fqdn }}"
         cert_subject_alternative_names:
+          - 'DNS:{{ ansible_fqdn }}'
           - 'DNS:localhost'
+          - 'IP:{{ ansible_host }}'
           - 'IP:127.0.0.1'

@@ -12,20 +12,19 @@ argument_specs:
         default: []
         description:
           - A list of additional configuration files to include in the HTTP server block.
-          - The files must be located in the `files` directory of the role.
-          - See trippsc2.nginx.oss role for formatting information.
+          - See **trippsc2.nginx.oss** role for formatting information.
       nginxproxy_ssl_stapling:
         type: bool
         required: false
         default: true
         description:
-          - Enable or disable SSL stapling.
+          - Whether to enable SSL stapling.
       nginxproxy_ssl_stapling_verify:
         type: bool
         required: false
         default: true
         description:
-          - Enable or disable SSL stapling verification.
+          - Whether to enable SSL stapling verification.
       nginxproxy_redirect_server_name:
         type: str
         required: false
@@ -55,14 +54,12 @@ argument_specs:
           - If set to `_`, the server name is not checked.
       nginxproxy_server_certificate_path:
         type: path
-        required: false
-        default: /etc/pki/tls/certs/nginx.crt
+        required: true
         description:
           - The path to the server certificate file.
       nginxproxy_server_certificate_key_path:
         type: path
-        required: false
-        default: /etc/pki/tls/private/nginx.key
+        required: true
         description:
           - The path to the server certificate key file.
       nginxproxy_proxy_address:

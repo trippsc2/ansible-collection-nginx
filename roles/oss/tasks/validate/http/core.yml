@@ -1,0 +1,355 @@
+---
+- name: Validate response in error_page in HTTP config file
+  loop: "{{ _nginx_http_config_file.error_page | default([]) }}"
+  when:
+    - item.response is defined
+  ansible.builtin.assert:
+    that:
+      - item.response | regex_search('^=[0-9]{3}$') or
+        item.response | regex_search('^=$')
+    fail_msg: "Directive 'response' in 'error_page' in '{{ _nginx_http_config_file.destination }}' is not either '=' or '=XXX' where XXX is a 3-digit response code. Value: {{ item.response }}"
+    success_msg: "Directive 'response' in 'error_page' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.response }}"
+
+- name: Validate uri in error_page in HTTP config file
+  loop: "{{ _nginx_http_config_file.error_page | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.uri is uri or
+        item.uri | regex_search('^@')
+    fail_msg: "Directive 'uri' in 'error_page' in '{{ _nginx_http_config_file.destination }}' is not either a reference to a location beginning with '@' or a valid URI. Value: {{ item.uri }}"
+    success_msg: "Directive 'uri' in 'error_page' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.uri }}"
+
+- name: Validate auth_delay in HTTP config file
+  when:
+    - _nginx_http_config_file.auth_delay is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_delay | string | community.general.to_time_unit('s') >= 0
+    fail_msg: "Directive 'auth_delay' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive duration. Value: {{ _nginx_http_config_file.auth_delay }}"
+    success_msg: "Directive 'auth_delay' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.auth_delay }}"
+
+- name: Validate client_body_buffer_size in HTTP config file
+  when:
+    - _nginx_http_config_file.client_body_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.client_body_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_body_buffer_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.client_body_buffer_size }}"
+    success_msg: "Directive 'client_body_buffer_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.client_body_buffer_size }}"
+
+- name: Validate client_body_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.client_body_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.client_body_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'client_body_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.client_body_timeout }}"
+    success_msg: "Directive 'client_body_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.client_body_timeout }}"
+
+- name: Validate client_max_body_size in HTTP config file
+  when:
+    - _nginx_http_config_file.client_max_body_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.client_max_body_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_max_body_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.client_max_body_size }}"
+    success_msg: "Directive 'client_max_body_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.client_max_body_size }}"
+
+- name: Validate directio in HTTP config file
+  when:
+    - _nginx_http_config_file.directio is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.directio == 'off' or
+        _nginx_http_config_file.directio | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_header_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive size or 'off'. Value: {{ _nginx_http_config_file.directio }}"
+    success_msg: "Directive 'client_header_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.directio }}"
+
+- name: Validate keepalive_requests in HTTP config file
+  when:
+    - _nginx_http_config_file.keepalive_requests is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.keepalive_requests | int > 0
+    fail_msg: "Directive 'keepalive_requests' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.keepalive_requests }}"
+    success_msg: "Directive 'keepalive_requests' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.keepalive_requests }}"
+
+- name: Validate keepalive_time in HTTP config file
+  when:
+    - _nginx_http_config_file.keepalive_time is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.keepalive_time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'keepalive_time' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.keepalive_time }}"
+    success_msg: "Directive 'keepalive_time' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.keepalive_time }}"
+
+- name: Validate timeout in keepalive_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.keepalive_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.keepalive_timeout.timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'timeout' in 'keepalive_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.keepalive_timeout.timeout }}"
+    success_msg: "Directive 'timeout' in 'keepalive_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.keepalive_timeout.timeout }}"
+
+- name: Validate header_timeout in keepalive_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.keepalive_timeout is defined
+    - _nginx_http_config_file.keepalive_timeout.header_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.keepalive_timeout.header_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'header_timeout' in 'keepalive_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.keepalive_timeout.header_timeout }}"
+    success_msg: "Directive 'header_timeout' in 'keepalive_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.keepalive_timeout.header_timeout }}"
+
+- name: Validate lingering_time in HTTP config file
+  when:
+    - _nginx_http_config_file.lingering_time is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.lingering_time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'lingering_time' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.lingering_time }}"
+    success_msg: "Directive 'lingering_time' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.lingering_time }}"
+
+- name: Validate lingering_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.lingering_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.lingering_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'lingering_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.lingering_timeout }}"
+    success_msg: "Directive 'lingering_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.lingering_timeout }}"
+
+- name: Validate max_ranges in HTTP config file
+  when:
+    - _nginx_http_config_file.max_ranges is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.max_ranges | int >= 0
+    fail_msg: "Directive 'max_ranges' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ _nginx_http_config_file.max_ranges }}"
+    success_msg: "Directive 'max_ranges' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.max_ranges }}"
+
+- name: Validate max in open_file_cache in HTTP config file
+  when:
+    - _nginx_http_config_file.open_file_cache is defined
+    - not _nginx_http_config_file.open_file_cache.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.open_file_cache.max | int > 0
+    fail_msg: "Directive 'max' in 'open_file_cache' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.open_file_cache.max }}"
+    success_msg: "Directive 'max' in 'open_file_cache' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.open_file_cache.max }}"
+
+- name: Validate inactive in open_file_cache in HTTP config file
+  when:
+    - _nginx_http_config_file.open_file_cache is defined
+    - not _nginx_http_config_file.open_file_cache.off | default(false)
+    - _nginx_http_config_file.open_file_cache.inactive is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.open_file_cache.inactive | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'inactive' in 'open_file_cache' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.open_file_cache.inactive }}"
+    success_msg: "Directive 'inactive' in 'open_file_cache' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.open_file_cache.inactive }}"
+
+- name: Validate open_file_cache_min_uses in HTTP config file
+  when:
+    - _nginx_http_config_file.open_file_cache_min_uses is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.open_file_cache_min_uses | int > 0
+    fail_msg: "Directive 'open_file_cache_min_uses' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.open_file_cache_min_uses }}"
+    success_msg: "Directive 'open_file_cache_min_uses' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.open_file_cache_min_uses }}"
+
+- name: Validate open_file_cache_valid in HTTP config file
+  when:
+    - _nginx_http_config_file.open_file_cache_valid is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.open_file_cache_valid | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'open_file_cache_valid' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.open_file_cache_valid }}"
+    success_msg: "Directive 'open_file_cache_valid' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.open_file_cache_valid }}"
+
+- name: Validate count in output_buffers in HTTP config file
+  when:
+    - _nginx_http_config_file.output_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.output_buffers.count | int > 0
+    fail_msg: "Directive 'count' in 'output_buffers' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.output_buffers.count }}"
+    success_msg: "Directive 'count' in 'output_buffers' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.output_buffers.count }}"
+
+- name: Validate size in output_buffers in HTTP config file
+  when:
+    - _nginx_http_config_file.output_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.output_buffers.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'output_buffers' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.output_buffers.size }}"
+    success_msg: "Directive 'size' in 'output_buffers' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.output_buffers.size }}"
+
+- name: Validate postpone_output in HTTP config file
+  when:
+    - _nginx_http_config_file.postpone_output is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.postpone_output | int >= 0
+    fail_msg: "Directive 'postpone_output' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ _nginx_http_config_file.postpone_output }}"
+    success_msg: "Directive 'postpone_output' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.postpone_output }}"
+
+- name: Validate resolver in HTTP config file
+  loop: "{{ _nginx_http_config_file.resolver | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/resolver.yml
+  loop_control:
+    loop_var: _nginx_resolver
+
+- name: Validate resolver_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.resolver_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.resolver_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'resolver_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.resolver_timeout }}"
+    success_msg: "Directive 'resolver_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.resolver_timeout }}"
+
+- name: Validate send_lowat in HTTP config file
+  when:
+    - _nginx_http_config_file.send_lowat is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.send_lowat | string | human_to_bytes('B') >= 0
+    fail_msg: "Directive 'send_lowat' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive size. Value: {{ _nginx_http_config_file.send_lowat }}"
+    success_msg: "Directive 'send_lowat' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.send_lowat }}"
+
+- name: Validate send_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.send_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.send_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'send_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.send_timeout }}"
+    success_msg: "Directive 'send_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.send_timeout }}"
+
+- name: Validate sendfile_max_chunk in HTTP config file
+  when:
+    - _nginx_http_config_file.sendfile_max_chunk is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.sendfile_max_chunk | string | human_to_bytes('B') >= 0
+    fail_msg: "Directive 'sendfile_max_chunk' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive size. Value: {{ _nginx_http_config_file.sendfile_max_chunk }}"
+    success_msg: "Directive 'sendfile_max_chunk' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.sendfile_max_chunk }}"
+
+- name: Validate subrequest_output_buffer_size in HTTP config file
+  when:
+    - _nginx_http_config_file.subrequest_output_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.subrequest_output_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'subrequest_output_buffer_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.subrequest_output_buffer_size }}"
+    success_msg: "Directive 'subrequest_output_buffer_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.subrequest_output_buffer_size }}"
+
+- name: Validate types_hash_bucket_size in HTTP config file
+  when:
+    - _nginx_http_config_file.types_hash_bucket_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.types_hash_bucket_size | int > 0
+    fail_msg: "Directive 'types_hash_bucket_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.types_hash_bucket_size }}"
+    success_msg: "Directive 'types_hash_bucket_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.types_hash_bucket_size }}"
+
+- name: Validate types_hash_max_size in HTTP config file
+  when:
+    - _nginx_http_config_file.types_hash_max_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.types_hash_max_size | int > 0
+    fail_msg: "Directive 'types_hash_max_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.types_hash_max_size }}"
+    success_msg: "Directive 'types_hash_max_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.types_hash_max_size }}"
+
+- name: Validate client_header_buffer_size in HTTP config file
+  when:
+    - _nginx_http_config_file.client_header_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.client_header_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'client_header_buffer_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.client_header_buffer_size }}"
+    success_msg: "Directive 'client_header_buffer_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.client_header_buffer_size }}"
+
+- name: Validate client_header_timeout in HTTP config file
+  when:
+    - _nginx_http_config_file.client_header_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.client_header_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'client_header_timeout' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.client_header_timeout }}"
+    success_msg: "Directive 'client_header_timeout' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.client_header_timeout }}"
+
+- name: Validate connection_pool_size in HTTP config file
+  when:
+    - _nginx_http_config_file.connection_pool_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.connection_pool_size | int > 0
+    fail_msg: "Directive 'connection_pool_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.connection_pool_size }}"
+    success_msg: "Directive 'connection_pool_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.connection_pool_size }}"
+
+- name: Validate count in large_client_header_buffers in HTTP config file
+  when:
+    - _nginx_http_config_file.large_client_header_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.large_client_header_buffers.count | int > 0
+    fail_msg: "Directive 'count' in 'large_client_header_buffers' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.large_client_header_buffers.count }}"
+    success_msg: "Directive 'count' in 'large_client_header_buffers' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.large_client_header_buffers.count }}"
+
+- name: Validate size in large_client_header_buffers in HTTP config file
+  when:
+    - _nginx_http_config_file.large_client_header_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.large_client_header_buffers.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'large_client_header_buffers' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.large_client_header_buffers.size }}"
+    success_msg: "Directive 'size' in 'large_client_header_buffers' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.large_client_header_buffers.size }}"
+
+- name: Validate request_pool_size in HTTP config file
+  when:
+    - _nginx_http_config_file.request_pool_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.request_pool_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'request_pool_size' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_http_config_file.request_pool_size }}"
+    success_msg: "Directive 'request_pool_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.request_pool_size }}"
+
+- name: Validate server_names_hash_bucket_size in HTTP config file
+  when:
+    - _nginx_http_config_file.server_names_hash_bucket_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.server_names_hash_bucket_size | int > 0
+    fail_msg: "Directive 'server_names_hash_bucket_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.server_names_hash_bucket_size }}"
+    success_msg: "Directive 'server_names_hash_bucket_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.server_names_hash_bucket_size }}"
+
+- name: Validate server_names_hash_max_size in HTTP config file
+  when:
+    - _nginx_http_config_file.server_names_hash_max_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.server_names_hash_max_size | int > 0
+    fail_msg: "Directive 'server_names_hash_max_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.server_names_hash_max_size }}"
+    success_msg: "Directive 'server_names_hash_max_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.server_names_hash_max_size }}"
+
+- name: Validate variables_hash_bucket_size in HTTP config file
+  when:
+    - _nginx_http_config_file.variables_hash_bucket_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.variables_hash_bucket_size | int > 0
+    fail_msg: "Directive 'variables_hash_bucket_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.variables_hash_bucket_size }}"
+    success_msg: "Directive 'variables_hash_bucket_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.variables_hash_bucket_size }}"
+
+- name: Validate variables_hash_max_size in HTTP config file
+  when:
+    - _nginx_http_config_file.variables_hash_max_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.variables_hash_max_size | int > 0
+    fail_msg: "Directive 'variables_hash_max_size' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_http_config_file.variables_hash_max_size }}"
+    success_msg: "Directive 'variables_hash_max_size' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.variables_hash_max_size }}"

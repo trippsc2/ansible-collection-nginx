@@ -1,15 +1,17 @@
 {{ ansible_managed | comment }}
+{% for path in nginx_logrotate_paths %}
 
-/var/log/nginx/*.log {
-    daily
+{{ path }} {
+    {{ nginx_logrotate_period }}
     missingok
     rotate {{ nginx_logrotate_retention }}
     compress
     delaycompress
     notifempty
-    create {{ nginx_log_mode }} {{ nginx_user }} {{ nginx_group }}
+    create {{ nginx_logrotate_mode }} {{ _nginx_user }} {{ _nginx_group }}
     sharedscripts
     postrotate
         nginx -s reopen
     endscript
 }
+{% endfor %}

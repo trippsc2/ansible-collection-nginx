@@ -1,0 +1,18 @@
+---
+- name: Validate allow directive in location block
+  loop: "{{ _nginx_location_block.allow | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item == 'all' or
+        item | ansible.utils.ipaddr != false
+    fail_msg: "Directive 'allow' in location block in '{{ _nginx_http_config_file.destination }}' is not 'all' or a valid IP address or CIDR network. Value: {{ item }}"
+    success_msg: "Directive 'allow' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"
+
+- name: Validate deny directive in location block
+  loop: "{{ _nginx_location_block.deny | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item == 'all' or
+        item | ansible.utils.ipaddr != false
+    fail_msg: "Directive 'deny' in location block in '{{ _nginx_http_config_file.destination }}' is not 'all' or a valid IP address or CIDR network. Value: {{ item }}"
+    success_msg: "Directive 'deny' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"

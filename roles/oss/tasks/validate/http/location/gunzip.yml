@@ -1,0 +1,18 @@
+---
+- name: Validate number in gunzip_buffers in location block
+  when:
+    - _nginx_location_block.gunzip_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.gunzip_buffers.number | int > 0
+    fail_msg: "Directive 'number' in 'gunzip_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.gunzip_buffers.number }}"
+    success_msg: "Directive 'number' in 'gunzip_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.gunzip_buffers.number }}"
+
+- name: Validate size in gunzip_buffers in location block
+  when:
+    - _nginx_location_block.gunzip_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.gunzip_buffers.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'gunzip_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.gunzip_buffers.size }}"
+    success_msg: "Directive 'size' in 'gunzip_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.gunzip_buffers.size }}"

@@ -1,0 +1,362 @@
+---
+- name: Validate address in proxy_bind is defined in location block
+  when:
+    - _nginx_location_block.proxy_bind is defined
+    - not _nginx_location_block.proxy_bind.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_bind.address is defined
+    fail_msg: "Directive 'address' in 'proxy_bind' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'address' in 'proxy_bind' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate proxy_buffer_size in location block
+  when:
+    - _nginx_location_block.proxy_buffer_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_buffer_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'proxy_buffer_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.proxy_buffer_size }}"
+    success_msg: "Directive 'proxy_buffer_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_buffer_size }}"
+
+- name: Validate count in proxy_buffers in location block
+  when:
+    - _nginx_location_block.proxy_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_buffers.count | int > 0
+    fail_msg: "Directive 'count' in 'proxy_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.proxy_buffers.count }}"
+    success_msg: "Directive 'count' in 'proxy_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_buffers.count }}"
+
+- name: Validate size in proxy_buffers in location block
+  when:
+    - _nginx_location_block.proxy_buffers is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_buffers.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'proxy_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.proxy_buffers.size }}"
+    success_msg: "Directive 'size' in 'proxy_buffers' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_buffers.size }}"
+
+- name: Validate proxy_busy_buffers_size in location block
+  when:
+    - _nginx_location_block.proxy_busy_buffers_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_busy_buffers_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'proxy_busy_buffers_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.proxy_busy_buffers_size }}"
+    success_msg: "Directive 'proxy_busy_buffers_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_busy_buffers_size }}"
+
+- name: Validate proxy_cache_lock_age in location block
+  when:
+    - _nginx_location_block.proxy_cache_lock_age is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cache_lock_age | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'proxy_cache_lock_age' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_location_block.proxy_cache_lock_age }}"
+    success_msg: "Directive 'proxy_cache_lock_age' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_cache_lock_age }}"
+
+- name: Validate proxy_cache_lock_timeout in location block
+  when:
+    - _nginx_location_block.proxy_cache_lock_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cache_lock_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'proxy_cache_lock_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_location_block.proxy_cache_lock_timeout }}"
+    success_msg: "Directive 'proxy_cache_lock_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_cache_lock_timeout }}"
+
+- name: Validate proxy_cache_max_range_offset in location block
+  when:
+    - _nginx_location_block.proxy_cache_max_range_offset is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cache_max_range_offset | int > 0
+    fail_msg: "Directive 'proxy_cache_max_range_offset' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.proxy_cache_max_range_offset }}"
+    success_msg: "Directive 'proxy_cache_max_range_offset' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_cache_max_range_offset }}"
+
+- name: Validate proxy_cache_min_uses in location block
+  when:
+    - _nginx_location_block.proxy_cache_min_uses is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cache_min_uses | int > 0
+    fail_msg: "Directive 'proxy_cache_min_uses' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.proxy_cache_min_uses }}"
+    success_msg: "Directive 'proxy_cache_min_uses' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_cache_min_uses }}"
+
+- name: Validate conditions in proxy_cache_use_stale in location block is defined
+  when:
+    - _nginx_location_block.proxy_cache_use_stale is defined
+    - not _nginx_location_block.proxy_cache_use_stale.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cache_use_stale.conditions is defined
+    fail_msg: "Directive 'conditions' in 'proxy_cache_use_stale' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'conditions' in 'proxy_cache_use_stale' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate time in proxy_cache_valid in location block
+  loop: "{{ _nginx_location_block.proxy_cache_valid | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'time' in 'proxy_cache_valid' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ item.time }}"
+    success_msg: "Directive 'time' in 'proxy_cache_valid' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.time }}"
+
+- name: Validate proxy_connect_timeout in location block
+  when:
+    - _nginx_location_block.proxy_connect_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_connect_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'proxy_connect_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_location_block.proxy_connect_timeout }}"
+    success_msg: "Directive 'proxy_connect_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_connect_timeout }}"
+
+- name: Validate domains in proxy_cookie_domain in location block is defined
+  when:
+    - _nginx_location_block.proxy_cookie_domain is defined
+    - not _nginx_location_block.proxy_cookie_domain.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cookie_domain.domains is defined
+    fail_msg: "Directive 'domains' in 'proxy_cookie_domain' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'domains' in 'proxy_cookie_domain' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate flags in proxy_cookie_flags in location block is defined
+  when:
+    - _nginx_location_block.proxy_cookie_flags is defined
+    - not _nginx_location_block.proxy_cookie_flags.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cookie_flags.flags is defined
+    fail_msg: "Directive 'flags' in 'proxy_cookie_flags' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'flags' in 'proxy_cookie_flags' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate paths in proxy_cookie_path in location block is defined
+  when:
+    - _nginx_location_block.proxy_cookie_path is defined
+    - not _nginx_location_block.proxy_cookie_path.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_cookie_path.paths is defined
+    fail_msg: "Directive 'paths' in 'proxy_cookie_path' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'paths' in 'proxy_cookie_path' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate proxy_headers_hash_bucket_size in location block
+  when:
+    - _nginx_location_block.proxy_headers_hash_bucket_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_headers_hash_bucket_size | int > 0
+    fail_msg: "Directive 'proxy_headers_hash_bucket_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.proxy_headers_hash_bucket_size }}"
+    success_msg: "Directive 'proxy_headers_hash_bucket_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_headers_hash_bucket_size }}"
+
+- name: Validate proxy_headers_hash_max_size in location block
+  when:
+    - _nginx_location_block.proxy_headers_hash_max_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_headers_hash_max_size | int > 0
+    fail_msg: "Directive 'proxy_headers_hash_max_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.proxy_headers_hash_max_size }}"
+    success_msg: "Directive 'proxy_headers_hash_max_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_headers_hash_max_size }}"
+
+- name: Validate proxy_max_temp_file_size in location block
+  when:
+    - _nginx_location_block.proxy_max_temp_file_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_max_temp_file_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'proxy_max_temp_file_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.proxy_max_temp_file_size }}"
+    success_msg: "Directive 'proxy_max_temp_file_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_max_temp_file_size }}"
+
+- name: Validate conditions in proxy_next_upstream in location block is defined
+  when:
+    - _nginx_location_block.proxy_next_upstream is defined
+    - not _nginx_location_block.proxy_next_upstream.off | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_next_upstream.conditions is defined
+    fail_msg: "Directive 'conditions' in 'proxy_next_upstream' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'conditions' in 'proxy_next_upstream' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate proxy_next_upstream_timeout in location block
+  when:
+    - _nginx_location_block.proxy_next_upstream_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_next_upstream_timeout | string | community.general.to_time_unit('s') >= 0
+    fail_msg: "Directive 'proxy_next_upstream_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive duration. Value: {{ _nginx_location_block.proxy_next_upstream_timeout }}"
+    success_msg: "Directive 'proxy_next_upstream_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_next_upstream_timeout }}"
+
+- name: Validate proxy_next_upstream_tries in location block
+  when:
+    - _nginx_location_block.proxy_next_upstream_tries is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_next_upstream_tries | int >= 0
+    fail_msg: "Directive 'proxy_next_upstream_tries' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_location_block.proxy_next_upstream_tries }}"
+    success_msg: "Directive 'proxy_next_upstream_tries' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_next_upstream_tries }}"
+
+- name: Validate proxy_read_timeout in location block
+  when:
+    - _nginx_location_block.proxy_read_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_read_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'proxy_read_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_location_block.proxy_read_timeout }}"
+    success_msg: "Directive 'proxy_read_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_read_timeout }}"
+
+- name: Validate redirects in proxy_redirect in location block
+  when:
+    - _nginx_location_block.proxy_redirect is defined
+    - not _nginx_location_block.proxy_redirect.off | default(false)
+    - not _nginx_location_block.proxy_redirect.default | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_redirect.redirects is defined
+    fail_msg: "Directive 'redirects' in 'proxy_redirect' in location block in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'redirects' in 'proxy_redirect' in location block in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate proxy_send_lowat in location block
+  when:
+    - _nginx_location_block.proxy_send_lowat is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_send_lowat | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'proxy_send_lowat' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.proxy_send_lowat }}"
+    success_msg: "Directive 'proxy_send_lowat' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_send_lowat }}"
+
+- name: Validate proxy_send_timeout in location block
+  when:
+    - _nginx_location_block.proxy_send_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_send_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'proxy_send_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_location_block.proxy_send_timeout }}"
+    success_msg: "Directive 'proxy_send_timeout' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_send_timeout }}"
+
+- name: Check if proxy_ssl_certificate in location block is valid path
+  when:
+    - _nginx_location_block.proxy_ssl_certificate is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_location_block.proxy_ssl_certificate }}"
+  register: _proxy_ssl_certificate
+
+- name: Validate proxy_ssl_certificate in location block
+  when:
+    - _nginx_location_block.proxy_ssl_certificate is defined
+  ansible.builtin.assert:
+    that:
+      - _proxy_ssl_certificate.stat.isreg or _proxy_ssl_certificate.stat.islnk
+    fail_msg: "Directive 'proxy_ssl_certificate' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_location_block.proxy_ssl_certificate }}"
+    success_msg: "Directive 'proxy_ssl_certificate' in location block in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_location_block.proxy_ssl_certificate }}"
+
+- name: Check if proxy_ssl_certificate_key in location block is valid path
+  when:
+    - _nginx_location_block.proxy_ssl_certificate_key is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_location_block.proxy_ssl_certificate_key }}"
+  register: _proxy_ssl_certificate_key
+
+- name: Validate proxy_ssl_certificate_key in location block
+  when:
+    - _nginx_location_block.proxy_ssl_certificate_key is defined
+  ansible.builtin.assert:
+    that:
+      - _proxy_ssl_certificate_key.stat.isreg or _proxy_ssl_certificate_key.stat.islnk
+    fail_msg: "Directive 'proxy_ssl_certificate_key' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_location_block.proxy_ssl_certificate_key }}"
+    success_msg: "Directive 'proxy_ssl_certificate_key' in location block in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_location_block.proxy_ssl_certificate_key }}"
+
+- name: Check if proxy_ssl_crl in location block is valid path
+  when:
+    - _nginx_location_block.proxy_ssl_crl is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_location_block.proxy_ssl_crl }}"
+  register: _proxy_ssl_crl
+
+- name: Validate proxy_ssl_crl in location block
+  when:
+    - _nginx_location_block.proxy_ssl_crl is defined
+  ansible.builtin.assert:
+    that:
+      - _proxy_ssl_crl.stat.isreg or _proxy_ssl_crl.stat.islnk
+    fail_msg: "Directive 'proxy_ssl_crl' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_location_block.proxy_ssl_crl }}"
+    success_msg: "Directive 'proxy_ssl_crl' in location block in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_location_block.proxy_ssl_crl }}"
+
+- name: Check if proxy_ssl_password_file in location block is valid path
+  when:
+    - _nginx_location_block.proxy_ssl_password_file is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_location_block.proxy_ssl_password_file }}"
+  register: _proxy_ssl_password_file
+
+- name: Validate proxy_ssl_password_file in location block
+  when:
+    - _nginx_location_block.proxy_ssl_password_file is defined
+  ansible.builtin.assert:
+    that:
+      - _proxy_ssl_password_file.stat.isreg or _proxy_ssl_password_file.stat.islnk
+    fail_msg: "Directive 'proxy_ssl_password_file' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_location_block.proxy_ssl_password_file }}"
+    success_msg: "Directive 'proxy_ssl_password_file' in location block in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_location_block.proxy_ssl_password_file }}"
+
+- name: Check if proxy_ssl_trusted_certificate in location block is valid path
+  when:
+    - _nginx_location_block.proxy_ssl_trusted_certificate is defined
+  become: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_location_block.proxy_ssl_trusted_certificate }}"
+  register: _proxy_ssl_trusted_certificate
+
+- name: Validate proxy_ssl_trusted_certificate in location block
+  when:
+    - _nginx_location_block.proxy_ssl_trusted_certificate is defined
+  ansible.builtin.assert:
+    that:
+      - _proxy_ssl_trusted_certificate.stat.isreg or _proxy_ssl_trusted_certificate.stat.islnk
+    fail_msg: "Directive 'proxy_ssl_trusted_certificate' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_location_block.proxy_ssl_trusted_certificate }}"
+    success_msg: "Directive 'proxy_ssl_trusted_certificate' in location block in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_location_block.proxy_ssl_trusted_certificate }}"
+
+- name: Validate user in proxy_store_access in location block
+  when:
+    - _nginx_location_block.proxy_store_access is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_store_access.user == 'r' or
+        _nginx_location_block.proxy_store_access.user == 'rw' or
+        _nginx_location_block.proxy_store_access.user == 'rx' or
+        _nginx_location_block.proxy_store_access.user == 'rwx'
+    fail_msg: "Directive 'user' in 'proxy_store_access' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid permission set. Value: {{ _nginx_location_block.proxy_store_access.user }}"
+    success_msg: "Directive 'user' in 'proxy_store_access' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_store_access.user }}"
+
+- name: Validate group in proxy_store_access in location block
+  when:
+    - _nginx_location_block.proxy_store_access is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_store_access.group == 'r' or
+        _nginx_location_block.proxy_store_access.group == 'rw' or
+        _nginx_location_block.proxy_store_access.group == 'rx' or
+        _nginx_location_block.proxy_store_access.group == 'rwx'
+    fail_msg: "Directive 'group' in 'proxy_store_access' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid permission set. Value: {{ _nginx_location_block.proxy_store_access.group }}"
+    success_msg: "Directive 'group' in 'proxy_store_access' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_store_access.group }}"
+
+- name: Validate all in proxy_store_access in location block
+  when:
+    - _nginx_location_block.proxy_store_access is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_store_access.all == 'r' or
+        _nginx_location_block.proxy_store_access.all == 'rw' or
+        _nginx_location_block.proxy_store_access.all == 'rx' or
+        _nginx_location_block.proxy_store_access.all == 'rwx'
+    fail_msg: "Directive 'all' in 'proxy_store_access' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid permission set. Value: {{ _nginx_location_block.proxy_store_access.all }}"
+    success_msg: "Directive 'all' in 'proxy_store_access' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_store_access.all }}"
+
+- name: Validate proxy_temp_file_write_size in location block
+  when:
+    - _nginx_location_block.proxy_temp_file_write_size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_location_block.proxy_temp_file_write_size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'proxy_temp_file_write_size' in location block in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_location_block.proxy_temp_file_write_size }}"
+    success_msg: "Directive 'proxy_temp_file_write_size' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_location_block.proxy_temp_file_write_size }}"

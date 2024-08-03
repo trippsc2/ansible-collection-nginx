@@ -1,0 +1,18 @@
+---
+- name: Check if auth_basic_user_file in server block is a valid path
+  when:
+    - _nginx_server_block.auth_basic_user_file is defined
+  become: true
+  check_mode: true
+  ansible.builtin.stat:
+    path: "{{ _nginx_server_block.auth_basic_user_file }}"
+  register: _nginx_auth_basic_user_file
+
+- name: Validate auth_basic_user_file in server block is a valid path
+  when:
+    - _nginx_server_block.auth_basic_user_file is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_auth_basic_user_file.stat.exists
+    fail_msg: "Directive 'auth_basic_user_file' in server block in '{{ _nginx_http_config_file.destination }}' is not a valid path. Value: {{ _nginx_server_block.auth_basic_user_file }}"
+    success_msg: "Directive 'auth_basic_user_file' in server block in '{{ _nginx_http_config_file.destination }}' is a valid path. Value: {{ _nginx_server_block.auth_basic_user_file }}"

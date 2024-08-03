@@ -1,0 +1,23 @@
+---
+- name: Validate string in split_clients block
+  ansible.builtin.assert:
+    that:
+      - _nginx_split_clients_block.string | regex_search('^\$[a-zA-Z0-9_\{\}]+$')
+    fail_msg: "Directive 'string' in 'split_clients' in '{{ _nginx_http_config_file.destination }}' is not a valid variable name. Value: {{ _nginx_split_clients_block.string }}"
+    success_msg: "Directive 'string' in 'split_clients' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_split_clients_block.string }}"
+
+- name: Validate variable in split_clients block
+  ansible.builtin.assert:
+    that:
+      - _nginx_split_clients_block.variable | regex_search('^\$[a-zA-Z0-9_]+$')
+    fail_msg: "Directive 'variable' in 'split_clients' in '{{ _nginx_http_config_file.destination }}' is not a valid variable name. Value: {{ _nginx_split_clients_block.variable }}"
+    success_msg: "Directive 'variable' in 'split_clients' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_split_clients_block.variable }}"
+
+- name: Validate percentage in split_clients block
+  loop: "{{ _nginx_split_clients_block.contents | default([]) }}"
+  ansible.builtin.assert:
+    that:
+      - item.percentage == '*' or
+        item.percentage | regex_replace('%', '') | float > 0
+    fail_msg: "Directive 'percentage' in 'split_clients' in '{{ _nginx_http_config_file.destination }}' is not '*' or a valid positive percentage. Value: {{ item.percentage }}"
+    success_msg: "Directive 'percentage' in 'split_clients' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.percentage }}"

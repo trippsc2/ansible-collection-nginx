@@ -39,7 +39,7 @@ auth_request_set {{ request.variable }} {{ request.value }};
 auth_jwt off;
 {% else %}
 auth_jwt {{ data.auth_jwt.realm -}}
-         {{- ' token=' + data.auth_jwt_enable.token | string if data.auth_jwt_enable.token is defined }};
+  {{- ' token=' + data.auth_jwt.token | string if data.auth_jwt.token is defined }};
 {% endif %}
 {% endif %}
 {%- if data.auth_jwt_key_file is defined %}
@@ -53,7 +53,7 @@ auth_jwt_type {{ data.auth_jwt_type }};
 {% endif %}
 {%- for require in data.auth_jwt_require | default([]) %}
 auth_jwt_require {{ require.values | join(' ') -}}
-                 {{- ' error=' + require.error | string if require.error is defined }};
+  {{- ' error=' + require.error | string if require.error is defined }};
 {% endfor %}
 {% endif %}
 

@@ -1,0 +1,15 @@
+---
+- name: Validate values in auth_jwt_require in location block has at least one element
+  ansible.builtin.assert:
+    that:
+      - _nginx_auth_jwt_require.values | length > 0
+    fail_msg: "Directive 'values' in 'auth_jwt_require' in location block in '{{ _nginx_http_config_file.destination }}' must not be empty list."
+    success_msg: "Directive 'values' in 'auth_jwt_require' in location block in '{{ _nginx_http_config_file.destination }}' is not empty list."
+
+- name: Validate values in auth_jwt_require in location block are valid
+  loop: "{{ _nginx_auth_jwt_require.values }}"
+  ansible.builtin.assert:
+    that:
+      - item | regex_search('^\$[a-zA-Z0-9_-]+$')
+    fail_msg: "Directive 'values' in 'auth_jwt_require' in location block in '{{ _nginx_http_config_file.destination }}' is not a valid variable name. Value: {{ item }}"
+    success_msg: "Directive 'values' in 'auth_jwt_require' in location block in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item }}"

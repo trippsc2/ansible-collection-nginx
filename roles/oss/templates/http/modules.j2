@@ -125,7 +125,7 @@ gzip_proxied off;
 {% elif data.gzip_proxied.any | default(false) %}
 gzip_proxied any;
 {% else %}
-gzip_proxied {{ data.gzip_proxied.values | join(' ') }};
+gzip_proxied {{ data.gzip_proxied.conditions | join(' ') }};
 {% endif %}
 {% endif %}
 {%- if data.gzip_types is defined %}
@@ -168,8 +168,8 @@ expires {{ 'modified ' if data.expires.modified | default(false) }}{{ data.expir
        context == 'location' %}
 {%- for limit in data.limit_req | default([]) %}
 limit_req zone={{ limit.zone -}}
-               {{- ' burst=' + limit.burst | string if limit.burst is defined -}}
-               {{- ' nodelay' if limit.nodelay | default(false) else ' delay=' + limit.delay | string if limit.delay is defined }};
+  {{- ' burst=' + limit.burst | string if limit.burst is defined -}}
+  {{- ' nodelay' if limit.nodelay | default(false) else ' delay=' + limit.delay | string if limit.delay is defined }};
 {% endfor %}
 {%- if data.limit_req_dry_run is defined %}
 limit_req_dry_run {{ data.limit_req_dry_run | ternary('on', 'off') }};
@@ -191,6 +191,14 @@ limit_req_zone {{ zone.key }} zone={{ zone.name }}:{{ zone.size }} rate={{ zone.
 
 {# NGINX HTTP Log -- ngx_http_log_module #}
 {%- macro log(data, context) %}
+{%- if context == 'http' %}
+{%- for format in data.log_format | default([]) %}
+log_format {{ format.name -}}
+  {{- ' escape=' + format.escape | string if format.escape is defined -}}
+  {{- ' ' + format.format | string }};
+{% endfor %}
+{% endif %}
+
 {%- if context == 'http' or
        context == 'server' or
        context == 'location' or
@@ -202,16 +210,16 @@ access_log off;
 {% else %}
 {%- for log in data.access_log.logs | default([]) %}
 access_log {{ log.path -}}
-           {%- if log.format is defined -%}
-           {{- ' ' + log.format | string -}}
-           {{- ' buffer=' + log.buffer | string if log.buffer is defined -}}
-           {%- if log.gzip is defined -%}
-           {{- ' gzip' -}}
-           {{- '=' + log.gzip.level | string if log.gzip.level is defined -}}
-           {%- endif -%}
-           {{- ' flush=' + log.flush | string if log.flush is defined -}}
-           {{- ' if=' + log.if | string if log.if is defined -}}
-           {%- endif %};
+  {%- if log.format is defined -%}
+  {{- ' ' + log.format | string -}}
+  {{- ' buffer=' + log.buffer | string if log.buffer is defined -}}
+  {%- if log.gzip is defined -%}
+  {{- ' gzip' -}}
+  {{- '=' + log.gzip.level | string if log.gzip.level is defined -}}
+  {%- endif -%}
+  {{- ' flush=' + log.flush | string if log.flush is defined -}}
+  {{- ' if=' + log.if | string if log.if is defined -}}
+  {%- endif %};
 {% endfor %}
 {% endif %}
 {% endif %}
@@ -225,22 +233,14 @@ access_log {{ log.path -}}
 open_log_file_cache off;
 {% else %}
 open_log_file_cache max={{ data.open_log_file_cache.max -}}
-                    {{- ' inactive=' + data.open_log_file_cache.inactive | string if data.open_log_file_cache.inactive is defined -}}
-                    {{- ' min_uses=' + data.open_log_file_cache.min_uses | string if data.open_log_file_cache.min_uses is defined -}}
-                    {{- ' valid=' + data.open_log_file_cache.valid | string if data.open_log_file_cache.valid is defined }};
+  {{- ' inactive=' + data.open_log_file_cache.inactive | string if data.open_log_file_cache.inactive is defined -}}
+  {{- ' min_uses=' + data.open_log_file_cache.min_uses | string if data.open_log_file_cache.min_uses is defined -}}
+  {{- ' valid=' + data.open_log_file_cache.valid | string if data.open_log_file_cache.valid is defined }};
 {% endif %}
 {% endif %}
-{%- for log in data.error_log | default([]) %}
-error_log {{ log.file }}{{ ' ' + log.level | string if data.log.level is defined }};
-{% endfor %}
+{%- if data.error_log is defined %}
+error_log {{ data.error_log.file }}{{ ' ' + data.error_log.level | string if data.error_log.level is defined }};
 {% endif %}
-
-{%- if context == 'http' %}
-{%- for format in data.log_format | default([]) %}
-log_format {{ format.name -}}
-           {{- ' escape=' + format.escape | string if format.escape is defined -}}
-           {{- ' ' + format.format | string }};
-{% endfor %}
 {% endif %}
 {% endmacro %}
 
@@ -248,10 +248,10 @@ log_format {{ format.name -}}
 {%- macro map(data, context) %}
 {%- if context == 'http' %}
 {%- if data.map_hash_bucket_size is defined %}
-map_hash_bucket_size {{ data.hash_bucket_size }};
+map_hash_bucket_size {{ data.map_hash_bucket_size }};
 {% endif %}
 {%- if data.map_hash_max_size is defined %}
-map_hash_max_size {{ data.hash_max_size }};
+map_hash_max_size {{ data.map_hash_max_size }};
 {% endif %}
 {% endif %}
 
@@ -259,10 +259,10 @@ map_hash_max_size {{ data.hash_max_size }};
 {%- if data.hostnames | default(false) %}
 hostnames;
 {% endif %}
-{%- if map_data.volatile | default(false) %}
+{%- if data.volatile | default(false) %}
 volatile;
 {% endif %}
-{%- for content_line in map_data.content | default([]) %}
+{%- for content_line in data.content | default([]) %}
 {{ content_line.match }} {{ content_line.value }};
 {% endfor %}
 {% endif %}
@@ -280,15 +280,15 @@ mirror {{ uri }};
 {% endif %}
 {% endif %}
 {%- if data.mirror_request_body is defined %}
-mirror_request_body {{ mirror.request_body | ternary('on', 'off') }};
+mirror_request_body {{ data.mirror_request_body | ternary('on', 'off') }};
 {% endif %}
 {% endmacro %}
 
 {# NGINX HTTP RealIP -- ngx_http_realip_module #}
 {%- macro realip(data) %}
-{%- if data.set_real_ip_from is defined %}
-set_real_ip_from {{ data.set_real_ip_from }};
-{% endif %}
+{%- for set_real_ip_from in data.set_real_ip_from | default([]) %}
+set_real_ip_from {{ set_real_ip_from }};
+{% endfor %}
 {%- if data.real_ip_header is defined %}
 real_ip_header {{ data.real_ip_header }};
 {% endif %}
@@ -316,10 +316,13 @@ uninitialized_variable_warn {{ data.uninitialized_variable_warn | ternary('on', 
        context == 'location' or
        context == 'locationif' or
        context == 'serverif' %}
+{%- if data.break | default(false) %}
+break;
+{% endif %}
 {%- if data.return is defined %}
 return{{ ' ' + data.return.code | string if data.return.code is defined -}}
-      {{- ' ' + data.return.url | string if data.return.url is defined -}}
-      {{- ' ' + data.return.text | string if data.return.text is defined }};
+  {{- ' ' + data.return.url | string if data.return.url is defined -}}
+  {{- ' ' + data.return.text | string if data.return.text is defined }};
 {% endif %}
 {%- for rewrite in data.rewrite | default([]) %}
 rewrite {{ rewrite.regex }} {{ rewrite.replacement -}}
@@ -334,7 +337,7 @@ set {{ set.variable }} {{ set.value }};
 {# NGINX HTTP Split Clients -- ngx_http_split_clients_module #}
 {%- macro split_clients(data) %}
 {%- for content in data.contents %}
-{{ content_line.percentage }} {{ content_line.value }};
+{{ content.percentage }} {{ content.value }};
 {% endfor %}
 {% endmacro %}
 

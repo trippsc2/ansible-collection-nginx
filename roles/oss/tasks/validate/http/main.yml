@@ -1,0 +1,72 @@
+---
+- name: Validate ngx_http_core_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/core.yml
+
+- name: Validate ngx_http_v2_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/http2.yml
+
+- name: Validate ngx_http_ssl_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/ssl.yml
+
+- name: Validate ngx_http_proxy_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/proxy.yml
+
+- name: Validate ngx_http_grpc_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/grpc.yml
+
+- name: Validate ngx_http_access_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/access.yml
+
+- name: Validate ngx_http_auth_basic_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/auth_basic.yml
+
+- name: Validate ngx_http_auth_request_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/auth_request.yml
+
+- name: Validate ngx_http_auth_jwt_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/auth_jwt.yml
+
+- name: Validate ngx_http_gunzip_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/gunzip.yml
+
+- name: Validate ngx_http_gzip_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/gzip.yml
+
+- name: Validate ngx_http_headers_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/headers.yml
+
+- name: Validate ngx_http_limit_req_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/limit_req.yml
+
+- name: Validate ngx_http_log_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/log.yml
+
+- name: Validate ngx_http_map_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/map.yml
+
+- name: Validate ngx_http_realip_module variables in HTTP config file
+  ansible.builtin.include_tasks: validate/http/realip.yml
+
+- name: Validate map block in HTTP config file
+  loop: "{{ _nginx_http_config_file.map | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/map/main.yml
+  loop_control:
+    loop_var: _nginx_map_block
+
+- name: Validate server block in HTTP config file
+  loop: "{{ _nginx_http_config_file.server | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/server/main.yml
+  loop_control:
+    loop_var: _nginx_server_block
+
+- name: Validate split_clients block in HTTP config file
+  loop: "{{ _nginx_http_config_file.split_clients | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/split_clients/main.yml
+  loop_control:
+    loop_var: _nginx_split_clients_block
+
+- name: Validate upstream block in HTTP config file
+  loop: "{{ _nginx_http_config_file.upstream | default([]) }}"
+  ansible.builtin.include_tasks: validate/http/upstream/main.yml
+  loop_control:
+    loop_var: _nginx_upstream_block

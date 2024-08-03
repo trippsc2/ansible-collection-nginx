@@ -1,0 +1,10 @@
+---
+- name: Validate auth_request in HTTP config file
+  when:
+    - _nginx_http_config_file.auth_request is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.auth_request == 'off' or
+        _nginx_http_config_file.auth_request is uri
+    fail_msg: "Directive 'auth_request' in '{{ _nginx_http_config_file.destination }}' is not 'off' or a valid URI. Value: {{ _nginx_http_config_file.auth_request }}"
+    success_msg: "Directive 'auth_request' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_http_config_file.auth_request }}"

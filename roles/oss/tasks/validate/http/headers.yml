@@ -1,0 +1,24 @@
+---
+- name: Validate time in expires in HTTP config file is defined
+  when:
+    - _nginx_http_config_file.expires is defined
+    - not _nginx_http_config_file.expires.off | default(false)
+    - not _nginx_http_config_file.expires.max | default(false)
+    - not _nginx_http_config_file.expires.epoch | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.expires.time is defined
+    fail_msg: "Directive 'time' in 'expires' in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'time' in 'expires' in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate time in expires in HTTP config file
+  when:
+    - _nginx_http_config_file.expires is defined
+    - not _nginx_http_config_file.expires.off | default(false)
+    - not _nginx_http_config_file.expires.max | default(false)
+    - not _nginx_http_config_file.expires.epoch | default(false)
+  ansible.builtin.assert:
+    that:
+      - _nginx_http_config_file.expires.time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'time' in 'expires' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_http_config_file.expires.time }}"
+    success_msg: "Directive 'time' in 'expires' in '{{ _nginx_http_config_file.destination }}' is valid. {{ _nginx_http_config_file.expires.time }}"

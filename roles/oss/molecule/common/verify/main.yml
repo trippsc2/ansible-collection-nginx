@@ -1,0 +1,136 @@
+---
+- name: Verify
+  hosts:
+    - subjects
+  tasks:
+    - name: Set EL variables
+      ansible.builtin.set_fact:
+        _nginx_user: "{{ 'nginx' if ansible_os_family == 'RedHat' else 'www-data' }}"
+        _nginx_group: "{{ 'nginx' if ansible_os_family == 'RedHat' else 'www-data' }}"
+
+    - name: Set default nginx_user variable
+      when:
+        - nginx_user is not defined
+      ansible.builtin.set_fact:
+        nginx_user: "{{ _nginx_user }}"
+
+    - name: Set default nginx_group variable
+      when:
+        - nginx_group is not defined
+      ansible.builtin.set_fact:
+        nginx_group: "{{ _nginx_group }}"
+
+    - name: Set default nginx_http_config_files variable
+      when:
+        - nginx_http_config_files is not defined
+      ansible.builtin.set_fact:
+        nginx_http_config_files:
+          - destination: /etc/nginx/conf.d/default.conf
+            client_body_timeout: 10s
+            client_header_timeout: 10s
+            keepalive_timeout:
+              timeout: 10s
+            send_timeout: 10s
+            large_client_header_buffers:
+              count: 2
+              size: 1k
+            log_format:
+              - name: main
+                format: |-
+                  'server="$server_name" host="$host” dest_port="$server_port"' 'src="$remote_addr" ip="$realip_remote_addr" user="$remote_user" ' 'time_local="$time_local" http_status="$status" ' 'http_referer="$http_referer" http_user_agent="$http_user_agent" ' 'http_x_forwarded_for="$http_x_forwarded_for" ' 'http_x_header="$http_x_header" uri_query="$query_string" uri_path="$uri" ' 'request=$request http_method="$request_method"'
+            server:
+              - listen:
+                  - port: 80
+                server_name: _
+                error_page:
+                  - codes:
+                      - 500
+                      - 502
+                      - 503
+                      - 504
+                    uri: /50x.html
+                access_log:
+                  logs:
+                    - path: /var/log/nginx/access.log
+                      format: main
+                location:
+                  - path: /
+                    root: /usr/share/nginx/html
+
+    - name: Check if NGINX is installed
+      when:
+        - ansible_os_family != 'RedHat' or
+          nginx_appstream_version is not defined
+      become: true
+      check_mode: true
+      ansible.builtin.package:
+        name:
+          - nginx
+        state: present
+      register: _dnf_package
+
+    - name: Verify NGINX is installed
+      ansible.builtin.assert:
+        that:
+          - not _dnf_package.changed
+        fail_msg: NGINX is not installed.
+        success_msg: NGINX is installed.
+
+    - name: Check if NGINX major version is installed
+      when:
+        - ansible_os_family == 'RedHat'
+        - nginx_appstream_version is defined
+      become: true
+      check_mode: true
+      ansible.builtin.dnf:
+        name:
+          - "@nginx:{{ nginx_appstream_version }}"
+        state: present
+      register: _dnf_package
+
+    - name: Verify NGINX major version is installed
+      ansible.builtin.assert:
+        that:
+          - not _dnf_package.changed
+        fail_msg: NGINX major version is not installed.
+        success_msg: NGINX major version is installed.
+
+    - name: Check if NGINX service is enabled
+      become: true
+      check_mode: true
+      ansible.builtin.systemd_service:
+        name: nginx.service
+        enabled: true
+      register: _service_enabled
+
+    - name: Verify NGINX service is enabled
+      ansible.builtin.assert:
+        that:
+          - not _service_enabled.changed
+        fail_msg: NGINX service is not enabled.
+        success_msg: NGINX service is enabled.
+
+    - name: Check if NGINX service is running
+      become: true
+      check_mode: true
+      ansible.builtin.systemd_service:
+        name: nginx.service
+        state: started
+      register: _service_running
+
+    - name: Verify NGINX service is running
+      ansible.builtin.assert:
+        that:
+          - not _service_running.changed
+        fail_msg: NGINX service is not running.
+        success_msg: NGINX service is running.
+
+    - name: Verify nginx.conf
+      ansible.builtin.import_tasks: nginx.conf.yml
+
+    - name: Verify HTTP config file
+      loop: "{{ nginx_http_config_files }}"
+      ansible.builtin.include_tasks: http/main.yml
+      loop_control:
+        loop_var: _http_config_file
+        label: "{{ _http_config_file.destination }}"

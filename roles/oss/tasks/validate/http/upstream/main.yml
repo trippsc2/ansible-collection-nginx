@@ -1,0 +1,104 @@
+---
+- name: Validate weight in server in upstream block
+  loop: "{{ _nginx_upstream_block.servers | default([]) }}"
+  when:
+    - item.weight is defined
+  ansible.builtin.assert:
+    that:
+      - item.weight | int >= 0
+    fail_msg: "Directive 'weight' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not 0 or a positive integer. Value: {{ item.weight }}"
+    success_msg: "Directive 'weight' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.weight }}"
+
+- name: Validate max_conns in server in upstream block
+  loop: "{{ _nginx_upstream_block.servers | default([]) }}"
+  when:
+    - item.max_conns is defined
+  ansible.builtin.assert:
+    that:
+      - item.max_conns | int > 0
+    fail_msg: "Directive 'max_conns' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.max_conns }}"
+    success_msg: "Directive 'max_conns' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.max_conns }}"
+
+- name: Validate max_fails in server in upstream block
+  loop: "{{ _nginx_upstream_block.servers | default([]) }}"
+  when:
+    - item.max_fails is defined
+  ansible.builtin.assert:
+    that:
+      - item.max_fails | int > 0
+    fail_msg: "Directive 'max_fails' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ item.max_fails }}"
+    success_msg: "Directive 'max_fails' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.max_fails }}"
+
+- name: Validate fail_timeout in server in upstream block
+  loop: "{{ _nginx_upstream_block.servers | default([]) }}"
+  when:
+    - item.fail_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - item.fail_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'fail_timeout' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ item.fail_timeout }}"
+    success_msg: "Directive 'fail_timeout' in 'server' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ item.fail_timeout }}"
+
+- name: Validate size in zone in upstream block
+  when:
+    - _nginx_upstream_block.zone is defined
+    - _nginx_upstream_block.zone.size is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.zone.size | string | human_to_bytes('B') > 0
+    fail_msg: "Directive 'size' in 'zone' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive size. Value: {{ _nginx_upstream_block.zone.size }}"
+    success_msg: "Directive 'size' in 'zone' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_upstream_block.zone.size }}"
+
+- name: Validate hash in upstream block is defined
+  when:
+    - _nginx_upstream_block.load_balancing_method == 'hash'
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.hash is defined
+    fail_msg: "Directive 'hash' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'hash' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate random in upstream block is defined
+  when:
+    - _nginx_upstream_block.load_balancing_method == 'random'
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.random is defined
+    fail_msg: "Directive 'random' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not defined."
+    success_msg: "Directive 'random' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is defined."
+
+- name: Validate keepalive in upstream block
+  when:
+    - _nginx_upstream_block.keepalive is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.keepalive | int > 0
+    fail_msg: "Directive 'keepalive' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_upstream_block.keepalive }}"
+    success_msg: "Directive 'keepalive' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_upstream_block.keepalive }}"
+
+- name: Validate keepalive_requests in upstream block
+  when:
+    - _nginx_upstream_block.keepalive_requests is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.keepalive_requests | int > 0
+    fail_msg: "Directive 'keepalive_requests' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive integer. Value: {{ _nginx_upstream_block.keepalive_requests }}"
+    success_msg: "Directive 'keepalive_requests' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_upstream_block.keepalive_requests }}"
+
+- name: Validate keepalive_time in upstream block
+  when:
+    - _nginx_upstream_block.keepalive_time is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.keepalive_time | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'keepalive_time' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_upstream_block.keepalive_time }}"
+    success_msg: "Directive 'keepalive_time' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_upstream_block.keepalive_time }}"
+
+- name: Validate keepalive_timeout in upstream block
+  when:
+    - _nginx_upstream_block.keepalive_timeout is defined
+  ansible.builtin.assert:
+    that:
+      - _nginx_upstream_block.keepalive_timeout | string | community.general.to_time_unit('s') > 0
+    fail_msg: "Directive 'keepalive_timeout' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is not a positive duration. Value: {{ _nginx_upstream_block.keepalive_timeout }}"
+    success_msg: "Directive 'keepalive_timeout' in 'upstream' in '{{ _nginx_http_config_file.destination }}' is valid. Value: {{ _nginx_upstream_block.keepalive_timeout }}"
