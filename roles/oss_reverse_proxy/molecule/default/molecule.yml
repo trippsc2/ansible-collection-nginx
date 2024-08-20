@@ -12,6 +12,8 @@ platforms:
     box: jtarpley/${MOLECULE_BOX:-rocky8_cis}
     memory: 2048
     cpus: 2
+    provider_options:
+      default_prefix: nginx_oss_reverse_proxy_
     groups:
       - subjects
 provisioner:
