@@ -3,7 +3,7 @@ galaxy_info:
   author: Jim Tarpley
   namespace: trippsc2
   role_name: oss
-  description: This role installs and configures NGINX OSS
+  description: This role configures NGINX OSS on Linux machines.
 
   license: MIT
 

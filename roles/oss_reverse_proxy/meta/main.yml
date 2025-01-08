@@ -3,7 +3,7 @@ galaxy_info:
   author: Jim Tarpley
   namespace: trippsc2
   role_name: oss_reverse_proxy
-  description: This role installs and configures NGINX OSS as a reverse proxy.
+  description: This role installs and configures NGINX as a reverse proxy on Linux machines.
 
   license: MIT
 
