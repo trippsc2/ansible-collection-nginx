@@ -4,7 +4,7 @@ argument_specs:
     short_description: NGINX Reverse Proxy
     description:
       - This role installs and configures NGINX as a reverse proxy on Linux machines.
-    author: Jim Tarpley
+    author: Jim Tarpley (@trippsc2)
     options:
       nginxproxy_additional_http_config_files:
         type: list
