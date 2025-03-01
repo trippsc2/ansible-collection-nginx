@@ -7,7 +7,6 @@
     port: 80
     proto: tcp
     rule: allow
-    state: enabled
 
 - name: Allow HTTPS traffic
   become: true
@@ -17,7 +16,6 @@
     port: 443
     proto: tcp
     rule: allow
-    state: enabled
 
 - name: Allow additional TCP ports
   become: true
@@ -26,7 +24,6 @@
     port: "{{ item }}"
     proto: tcp
     rule: allow
-    state: enabled
 
 - name: Allow additional UDP ports
   become: true
@@ -35,4 +32,3 @@
     port: "{{ item }}"
     proto: udp
     rule: allow
-    state: enabled
