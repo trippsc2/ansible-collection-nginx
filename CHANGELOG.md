@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2025-05-15
+
+### Role - oss
+
+- Changed OS validation.
+
+### Role - oss_reverse_proxy
+
+- Changed OS validation.
+
 ## [1.1.2] - 2025-01-08
 
 ### Collection

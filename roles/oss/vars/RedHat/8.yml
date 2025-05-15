@@ -1,4 +1,0 @@
----
-_nginx_appstream_allowed_versions:
-  - '1.22'
-  - '1.24'

@@ -1,0 +1,27 @@
+---
+_nginx_os_is_supported: true
+_nginx_os_is_tested: true
+
+_nginx_use_appstream: true
+
+_nginx_appstream_allowed_versions:
+  - '1.20'
+  - '1.22'
+  - '1.24'
+
+_nginx_package:
+  - "@nginx:{{ nginx_appstream_version }}"
+
+_nginx_default_firewall_type: firewalld
+
+_nginx_default_configure_selinux: true
+
+_nginx_selinux_packages:
+  - policycoreutils
+  - python3-libsemanage
+
+_nginx_default_user: nginx
+_nginx_default_group: nginx
+
+_nginx_default_ssl_certificate_directory: /etc/pki/tls/certs
+_nginx_default_ssl_certificate_key_directory: /etc/pki/tls/private

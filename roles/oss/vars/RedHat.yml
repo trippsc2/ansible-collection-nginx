@@ -1,6 +1,13 @@
 ---
+_nginx_os_is_supported: true
+_nginx_os_is_tested: false
+
+_nginx_use_appstream: false
+
 _nginx_package:
-  - "@nginx:{{ nginx_appstream_version }}"
+  - nginx
+
+_nginx_default_firewall_type: firewalld
 
 _nginx_default_configure_selinux: true
 
@@ -10,8 +17,6 @@ _nginx_selinux_packages:
 
 _nginx_default_user: nginx
 _nginx_default_group: nginx
-
-_nginx_default_firewall_type: firewalld
 
 _nginx_default_ssl_certificate_directory: /etc/pki/tls/certs
 _nginx_default_ssl_certificate_key_directory: /etc/pki/tls/private
