@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss_reverse_proxy
-Version: 1.1.3
+Version: 1.1.4
 
 This role installs and configures NGINX as a reverse proxy on Linux machines.
 
@@ -11,7 +11,7 @@ This role installs and configures NGINX as a reverse proxy on Linux machines.
 | -------- | -------- |
 | Debian | <ul><li>bookworm</li></ul> |
 | EL | <ul><li>9</li><li>8</li></ul> |
-| Ubuntu | <ul><li>noble</li><li>jammy</li><li>focal</li></ul> |
+| Ubuntu | <ul><li>noble</li><li>jammy</li></ul> |
 
 ## Dependencies
 | Role |
