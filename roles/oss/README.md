@@ -1,7 +1,7 @@
 <!-- BEGIN_ANSIBLE_DOCS -->
 
 # Ansible Role: trippsc2.nginx.oss
-Version: 1.1.3
+Version: 1.1.4
 
 This role configures NGINX OSS on Linux machines.
 
@@ -11,13 +11,14 @@ This role configures NGINX OSS on Linux machines.
 | -------- | -------- |
 | Debian | <ul><li>bookworm</li></ul> |
 | EL | <ul><li>9</li><li>8</li></ul> |
-| Ubuntu | <ul><li>noble</li><li>jammy</li><li>focal</li></ul> |
+| Ubuntu | <ul><li>noble</li><li>jammy</li></ul> |
 
 ## Dependencies
 
 | Collection |
 | ---------- |
 | ansible.posix |
+| ansible.utils |
 | community.general |
 
 ## Role Arguments
