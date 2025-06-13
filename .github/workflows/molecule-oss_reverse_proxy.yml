@@ -1,0 +1,61 @@
+---
+name: Molecule - oss_reverse_proxy role
+'on':
+  workflow_call: {}
+  workflow_dispatch: {}
+  pull_request:
+    branches:
+      - main
+    paths:
+      - galaxy.yml
+      - roles/oss_reverse_proxy/**
+      - '!roles/oss_reverse_proxy/.aar_doc.yml'
+      - '!roles/oss_reverse_proxy/README.md'
+      - '!roles/oss_reverse_proxy/meta/argument_specs.yml'
+      - '!roles/oss_reverse_proxy/meta/main.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - galaxy.yml
+      - roles/oss_reverse_proxy/**
+      - '!roles/oss_reverse_proxy/.aar_doc.yml'
+      - '!roles/oss_reverse_proxy/README.md'
+      - '!roles/oss_reverse_proxy/meta/argument_specs.yml'
+      - '!roles/oss_reverse_proxy/meta/main.yml'
+defaults:
+  run:
+    working-directory: 'trippsc2.nginx'
+jobs:
+  molecule:
+    name: Run Molecule tests
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+    strategy:
+      fail-fast: false
+      matrix:
+        box:
+          - debian12_base
+          - rocky9_cis
+          - rocky8_cis
+          - ubuntu2404_base
+          - ubuntu2204_base
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: 'trippsc2.nginx'
+      - name: Run Molecule tests
+        run: |
+          source ~/venv/ansible-2.16/bin/activate
+          rm -rf ~/.ansible/collections/ansible_collections/*
+          cd ./roles/oss_reverse_proxy
+          molecule test
+          rm -rf ~/.ansible/collections/ansible_collections/*
+          deactivate
+        env:
+          ANSIBLE_FORCE_COLOR: '1'
+          PY_COLORS: '1'
+          MOLECULE_BOX: ${{ matrix.box }}

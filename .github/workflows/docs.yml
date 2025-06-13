@@ -1,0 +1,38 @@
+---
+name: Generate Role Docs
+'on':
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+    paths:
+      - galaxy.yml
+      - roles/oss/.aar_doc.yml
+      - roles/oss/README.md
+      - roles/oss/meta/argument_specs.yml
+      - roles/oss/meta/main.yml
+      - roles/oss_reverse_proxy/.aar_doc.yml
+      - roles/oss_reverse_proxy/README.md
+      - roles/oss_reverse_proxy/meta/argument_specs.yml
+      - roles/oss_reverse_proxy/meta/main.yml
+defaults:
+  run:
+    working-directory: 'trippsc2.nginx'
+jobs:
+  docs_oss:
+    name: Generate oss role documentation
+    permissions:
+      contents: write
+    uses: trippsoft/github-actions/.github/workflows/role-docs.yml@main
+    with:
+      working_directory: 'trippsc2.nginx'
+      role_name: 'oss'
+  docs_oss_reverse_proxy:
+    name: Generate oss_reverse_proxy role documentation
+    permissions:
+      contents: write
+    needs: docs_oss
+    uses: trippsoft/github-actions/.github/workflows/role-docs.yml@main
+    with:
+      working_directory: 'trippsc2.nginx'
+      role_name: 'oss_reverse_proxy'

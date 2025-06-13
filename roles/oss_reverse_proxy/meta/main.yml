@@ -21,7 +21,6 @@ galaxy_info:
       versions:
         - noble
         - jammy
-        - focal
 
 dependencies:
   - role: trippsc2.nginx.oss

@@ -1,6 +1,6 @@
 ---
 _nginx_os_is_supported: true
-_nginx_os_is_tested: true
+_nginx_os_is_tested: false
 
 _nginx_use_appstream: false
 
